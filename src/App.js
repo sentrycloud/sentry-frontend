@@ -12,6 +12,7 @@ function App() {
     <BrowserRouter>
       <Routes>
           <Route path={"/"} element={<CoreLayout />}>
+            <Route index element={<Metric />} />
             <Route path={"dashboard"} element={<Dashboard />} />
             <Route path={"chart"} element={<Chart />} />
             <Route path={"metric"} element={<Metric />} />
