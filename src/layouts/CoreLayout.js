@@ -51,7 +51,7 @@ function CoreLayout() {
                 <Menu
                     theme="dark"
                     mode="inline"
-                    defaultSelectedKeys={['3']}
+                    defaultSelectedKeys={['4']}
                     items={menuItems}
                 />
             </Sider>
