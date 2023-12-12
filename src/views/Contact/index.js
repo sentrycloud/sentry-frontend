@@ -62,6 +62,7 @@ function Contact() {
         }).then(response => response.json())
             .then(response => {
                 if (response['code'] === 0) {
+                    record = response['data']
                     setContactList(prevContactList => [...prevContactList, record])
                 } else {
                     console.error(response['msg'])

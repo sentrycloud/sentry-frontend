@@ -1,5 +1,5 @@
-import {Link, Outlet} from "react-router-dom";
-import React, { useState } from 'react';
+import {Link, Outlet, useLocation} from "react-router-dom";
+import React, {useEffect, useState} from 'react';
 import {
     CompassOutlined,
     ContactsOutlined,
@@ -12,27 +12,27 @@ const { Header, Sider, Content } = Layout;
 
 const menuItems = [
     {
-        key: '1',
+        key: '/dashboard',
         icon: <DashboardOutlined />,
         label: (<Link  to={"/dashboard"}> Dashboards </Link>),
     },
     {
-        key: '2',
+        key: '/chart',
         icon: <LineChartOutlined />,
         label: (<Link  to={"/chart"}> Charts </Link>),
     },
     {
-        key: '3',
+        key: '/metric',
         icon: <CompassOutlined />,
         label: (<Link  to={"/metric"}> Metrics </Link>),
     },
     {
-        key: '4',
+        key: '/contact',
         icon: <ContactsOutlined />,
         label: (<Link  to={"/contact"}> Contacts </Link>),
     },
     {
-        key: '5',
+        key: '/alarm',
         icon: <PhoneOutlined />,
         label: (<Link  to={"/alarm"}> Alarms </Link>),
     }
@@ -40,18 +40,40 @@ const menuItems = [
 
 function CoreLayout() {
     const [collapsed, setCollapsed] = useState(false);
+    const [currentKey, setCurrentKey] = useState("/dashboard")
     const {
         token: { colorBgContainer },
     } = theme.useToken();
+
+    console.log("currentKey=" + currentKey)
+    let location = useLocation()
+    useEffect(() => {
+        console.log(location.pathname)
+        console.log(currentKey)
+        if (location.pathname === '/') {
+            if (currentKey !==  '/dashboard') {
+                setCurrentKey('/dashboard')
+            }
+        } else {
+            if (currentKey !== location.pathname) {
+                setCurrentKey(location.pathname)
+            }
+        }
+    }, [])
+
+    function onClick(e) {
+        setCurrentKey(e.key);
+    }
 
     return (
         <Layout>
             <Sider style={{padding: 10}} trigger={null} collapsible collapsed={collapsed}>
                 <div className="demo-logo-vertical" />
                 <Menu
+                    onClick={onClick}
                     theme="dark"
                     mode="inline"
-                    defaultSelectedKeys={['4']}
+                    selectedKeys={[currentKey]}
                     items={menuItems}
                 />
             </Sider>
