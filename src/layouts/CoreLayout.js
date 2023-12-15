@@ -59,7 +59,7 @@ function CoreLayout() {
                 setCurrentKey(location.pathname)
             }
         }
-    }, [])
+    }, [location.pathname, currentKey])
 
     function onClick(e) {
         setCurrentKey(e.key);
@@ -99,7 +99,7 @@ function CoreLayout() {
                     style={{
                         margin: '24px 16px',
                         padding: 24,
-                        minHeight: 280,
+                        minHeight: 360,
                         background: colorBgContainer,
                     }}
                 >
