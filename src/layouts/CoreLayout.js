@@ -48,14 +48,12 @@ function CoreLayout() {
     console.log("currentKey=" + currentKey)
     let location = useLocation()
     useEffect(() => {
-        console.log(location.pathname)
-        console.log(currentKey)
         if (location.pathname === '/') {
             if (currentKey !==  '/dashboard') {
                 setCurrentKey('/dashboard')
             }
         } else {
-            if (currentKey !== location.pathname) {
+            if (!location.pathname.startsWith(currentKey)) {
                 setCurrentKey(location.pathname)
             }
         }

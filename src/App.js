@@ -13,11 +13,12 @@ function App() {
       <Routes>
           <Route path={"/"} element={<CoreLayout />}>
             <Route index element={<Dashboard />} />
-            <Route path={"dashboard"} element={<Dashboard />} />
-            <Route path={"chart"} element={<Chart />} />
-            <Route path={"metric"} element={<Metric />} />
-            <Route path={"contact"} element={<Contact />} />
-            <Route path={"alarm"} element={<Alarm />} />
+              <Route path={"dashboard"} element={<Dashboard />} />
+              <Route path={"dashboard/:id"} element={<Dashboard />} />
+              <Route path={"chart"} element={<Chart />} />
+              <Route path={"metric"} element={<Metric />} />
+              <Route path={"contact"} element={<Contact />} />
+              <Route path={"alarm"} element={<Alarm />} />
           </Route>
           <Route path={"*"} element={<NotFound />} />
       </Routes>

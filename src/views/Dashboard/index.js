@@ -6,6 +6,7 @@ import React, {useEffect, useState} from "react";
 import {Button, Card, message, Select, Space, Tag} from "antd";
 import {EditOutlined, LineChartOutlined, MinusCircleOutlined, PlusCircleOutlined} from "@ant-design/icons";
 import FormModal from "../../components/FormModal";
+import {useNavigate, useParams} from "react-router-dom";
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
 const dashboardFormOptions = [
@@ -25,6 +26,8 @@ function Dashboard() {
     const [open, setOpen] = useState(false)
     const [editDashboard, setEditDashboard] = useState(null)
     const [dashboardList, setDashboardList] = useState([])
+    const params = useParams()
+    const navigate = useNavigate()
 
     useEffect(() => {
         fetch("/server/api/dashboard")
@@ -32,6 +35,12 @@ function Dashboard() {
             .then(response => setDashboardList(response['data']))
             .catch(console.error)
     }, [])
+
+    console.log("params=" + params)
+    if (params.id == null && dashboardList.length > 0) {
+        console.log("navigate to the first dashboard")
+        navigate("/dashboard/" + dashboardList[0].id)
+    }
 
     function onLayoutChange(newLayout) {
         setLayout({"lg": newLayout})
