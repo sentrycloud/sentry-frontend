@@ -3,6 +3,7 @@ import {Button, message, Row, Space, Table} from 'antd';
 import Search from "antd/es/input/Search";
 import {EditOutlined, MinusCircleOutlined, PlusCircleOutlined} from "@ant-design/icons";
 import MetricDetail from "./MetricDetail";
+import updateListItem from "../../common/utils";
 
 function Metric() {
     const [metricWhiteList, setMetricWhiteList] = useState([])
@@ -66,15 +67,7 @@ function Metric() {
             .then(response => {
                 if (response['code'] === 0) {
                     message.success("update metric success", 3)
-                    setMetricWhiteList(prevWhiteList =>
-                        prevWhiteList.map(item => {
-                            if (item.id === record.id) {
-                                return {...item, ...record}
-                            } else {
-                                return item
-                            }
-                        })
-                    )
+                    setMetricWhiteList(prevWhiteList => updateListItem(prevWhiteList, record))
                 } else {
                     console.error(response['msg'])
                 }

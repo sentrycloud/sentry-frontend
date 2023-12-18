@@ -1,13 +1,14 @@
-import { Responsive, WidthProvider } from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
-import Chart from "./Chart";
 import React, {useEffect, useState} from "react";
-import {Button, Card, message, Select, Space, Tag} from "antd";
-import {EditOutlined, LineChartOutlined, MinusCircleOutlined, PlusCircleOutlined} from "@ant-design/icons";
+import {Button, message, Modal, Select, Space, Tag} from "antd";
+import {EditOutlined, MinusCircleOutlined, PlusCircleOutlined} from "@ant-design/icons";
 import FormModal from "../../components/FormModal";
 import {useNavigate, useParams} from "react-router-dom";
-const ResponsiveGridLayout = WidthProvider(Responsive);
+import updateListItem from "../../common/utils";
+import DashboardDetail from "./DashboardDetail";
+
+const DashboardURL = "/server/api/dashboard"
 
 const dashboardFormOptions = [
     {name: "name", label: "Dashboard Name", message: "please input dashboard name"},
@@ -17,41 +18,23 @@ const dashboardFormOptions = [
 ]
 
 function Dashboard() {
-    const [layout, setLayout] = useState(
-        {"lg":[
-                    {i: 'a', x: 0, y: 0, w: 4, h: 4, static: true},
-                    {i: 'b', x: 4, y: 0, w: 4, h: 4},
-                    {i: 'c', x: 8, y: 0, w: 4, h: 4}
-                ]})
     const [open, setOpen] = useState(false)
     const [editDashboard, setEditDashboard] = useState(null)
     const [dashboardList, setDashboardList] = useState([])
+    const [deleteCheck, setDeleteCheck] = useState(false)
     const params = useParams()
     const navigate = useNavigate()
 
     useEffect(() => {
-        fetch("/server/api/dashboard")
+        fetch(DashboardURL)
             .then(response => response.json())
             .then(response => setDashboardList(response['data']))
             .catch(console.error)
     }, [])
 
-    console.log("params=" + params)
-    if (params.id == null && dashboardList.length > 0) {
-        console.log("navigate to the first dashboard")
-        navigate("/dashboard/" + dashboardList[0].id)
+    function handleChangeDashboard(option){
+        navigateDashboard(option.value)
     }
-
-    function onLayoutChange(newLayout) {
-        setLayout({"lg": newLayout})
-    }
-
-    console.log(layout)
-    const gridStyle = {width:'100%',height:'100%', border: '2px solid rgba(0, 0, 0, 0.05)'}
-
-    const handleChange = (value) => {
-        console.log(`selected ${value.label} ${value.value}`);
-    };
 
     function onAddDashboard() {
         setOpen(true)
@@ -60,15 +43,16 @@ function Dashboard() {
     function onCreateDashboard(record) {
         console.log("create dashboard: " + record)
 
-        fetch("/server/api/dashboard", {
+        fetch(DashboardURL, {
             method: "PUT",
             body: JSON.stringify(record)
         }).then(response => response.json())
             .then(response => {
                 if (response['code'] === 0) {
+                    message.success("add dashboard success", 3)
                     record = response['data'] // use response data to update the record
                     setDashboardList(prevDashboardList => [...prevDashboardList, record])
-                    message.success("add dashboard success", 3)
+                    navigateDashboard(record.id)
                 } else {
                     console.error(response['msg'])
                 }
@@ -78,19 +62,79 @@ function Dashboard() {
     }
 
     function onEditDashboard() {
-        setEditDashboard({name:"machine monitor", creator:"adu", app_name: "sentry", chart_layout:"[]"})
+        console.log(`edit dashboard: id=${params.id}`)
+        let currentDashboard = getCurrentDashboard()
+        setEditDashboard({name: currentDashboard.name, creator: currentDashboard.creator, app_name: currentDashboard.app_name, chart_layout: currentDashboard.chart_layout})
     }
 
     function onUpdateDashboard(record) {
         console.log("update dashboard: " + record.name + "," + record.creator + ", " + record.app_name + ", " + record.chart_layout)
+
+        record.id = parseInt(params.id)
+        fetch(DashboardURL, {
+            method: "POST",
+            body: JSON.stringify(record)
+        }).then(response => response.json())
+            .then(response => {
+                if (response['code'] === 0) {
+                    message.success("update dashboard success", 3)
+                    record = response['data'] // use response data to update the record
+                    setDashboardList(prevDashboardList => updateListItem(prevDashboardList, record))
+                } else {
+                    console.error(response['msg'])
+                }
+            }).catch(console.error)
+
         setEditDashboard(null)
     }
 
+    function onDeleteDashboard() {
+        console.log(`delete dashboard: id=${params.id}`)
+        let currentDashboard = getCurrentDashboard()
+        fetch(DashboardURL, {
+            method: "DELETE",
+            body: JSON.stringify(currentDashboard)
+        }).then(response => response.json())
+            .then(response => {
+                if (response['code'] === 0) {
+                    message.success("delete dashboard success", 3)
+                    setDashboardList(prevDashboardList => prevDashboardList.filter(item => item.id !== currentDashboard.id))
+                    navigate("/dashboard")
+                } else {
+                    console.error(response['msg'])
+                }
+            }).catch(console.error)
+
+        setDeleteCheck(false)
+    }
+
+    function getCurrentDashboard() {
+        let currentDashboardId = parseInt(params.id)
+        console.log("currentDashboardId=" + currentDashboardId)
+        let filterDashboard = dashboardList.filter(item => item.id === currentDashboardId)
+        return filterDashboard.length > 0 ? filterDashboard[0] : null
+    }
+
+    function navigateDashboard(id) {
+        console.log("navigate to the /dashboard/" + id)
+        navigate(`/dashboard/${id}`)
+    }
+
+    if (params.id == null && dashboardList.length > 0) {
+        navigateDashboard(dashboardList[0].id)
+    }
+
+    let currentDashboard = getCurrentDashboard()
+    let defaultLabel = ''
     let options = []
     if (dashboardList != null && dashboardList.length > 0) {
         options = dashboardList.map(item => {
             return {label: item.name, value: item.id}
         })
+
+        if (currentDashboard != null) {
+            defaultLabel = currentDashboard.name
+        }
     }
 
     return (
@@ -103,8 +147,8 @@ function Dashboard() {
                         labelInValue={true}
                         showSearch={true}
                         placeholder="select one dashboard"
-                        defaultValue={['']}
-                        onChange={handleChange}
+                        value={defaultLabel}
+                        onChange={handleChangeDashboard}
                         optionLabelProp="label"
                         optionFilterProp="label"
                         options={options}
@@ -114,32 +158,20 @@ function Dashboard() {
                     <Tag bordered={false}>Dashboard Operation: </Tag>
                     <Button icon={<PlusCircleOutlined/>} type={"primary"} onClick={onAddDashboard}>Add Dashboard</Button>
                     <Button icon={<EditOutlined/>} type={"primary"} onClick={onEditDashboard}>Edit Dashboard</Button>
-                    <Button icon={<MinusCircleOutlined/>} type={"primary"}>Delete Dashboard</Button>
-                    <Button icon={<LineChartOutlined/>} type={"primary"}>Add Chart</Button>
+                    <Button icon={<MinusCircleOutlined/>} type={"primary"} onClick={()=>setDeleteCheck(true) }>Delete Dashboard</Button>
                 </Space>
-
             </Space>
-            <Card title={"DashboardName"} bordered={false}>
-                <ResponsiveGridLayout
-                    className="layout"
-                    layouts={layout}
-                    preventCollision={true}
-                    autoSize={true}
-                    rowHeight={80}
-                    breakpoints={{lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
-                    cols={{ lg: 12, md: 12, sm: 6, xs: 4, xxs: 2 }}
-                    onLayoutChange={onLayoutChange}
-                >
-                    <div key='a' style={gridStyle}> <Chart /> </div>
-                    <div key='b' style={gridStyle}> <Chart /> </div>
-                    <div key='c' style={gridStyle}> <Chart /> </div>
-                </ResponsiveGridLayout>
-            </Card>
+
+            {currentDashboard && <DashboardDetail dashboard={currentDashboard} /> }
+
             <FormModal open={open} title={"Create Dashboard"} onCreate={onCreateDashboard}
                        onCancel={() => {setOpen(false)}} formItems={dashboardFormOptions} />
             {editDashboard && <FormModal open={true} title={"Update Dashboard"} onUpdate={onUpdateDashboard}
                                          onCancel={() => setEditDashboard(null)}
                                          formItems={dashboardFormOptions} record={editDashboard}/>}
+
+            <Modal open={deleteCheck} title={"Are you sure to delete current dashboard?"}
+                   onCancel={()=> setDeleteCheck(false)} onOk={onDeleteDashboard} />
         </div>
     );
 }

@@ -3,6 +3,7 @@ import {Button, Row, Space, Table} from 'antd';
 import Search from "antd/es/input/Search";
 import {EditOutlined, MinusCircleOutlined, PlusCircleOutlined} from "@ant-design/icons";
 import ContactDetail from "./ContactDetail";
+import updateListItem from "../../common/utils";
 
 function Contact() {
     const [contactList, setContactList] = useState([])
@@ -82,15 +83,7 @@ function Contact() {
         }).then(response => response.json())
             .then(response => {
                 if (response['code'] === 0) {
-                    setContactList(prevContactList =>
-                        prevContactList.map(item => {
-                                if (item.id === contact.id) {
-                                    return {...item, ...record}
-                                } else {
-                                    return item
-                                }
-                            })
-                    )
+                    setContactList(prevContactList => updateListItem(prevContactList, record))
                 } else {
                     console.error(response['msg'])
                 }
