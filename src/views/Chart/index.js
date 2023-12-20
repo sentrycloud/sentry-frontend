@@ -1,8 +1,7 @@
+import ChartDetail from "../Dashboard/ChartDetail";
 
 function Chart() {
-    return (
-        <h2>Chart</h2>
-    )
+    return <ChartDetail />
 }
 
 export default Chart

@@ -6,6 +6,7 @@ import Metric from "./views/Metric";
 import Contact from "./views/Contact";
 import Alarm from "./views/Alarm";
 import NotFound from "./views/NotFound";
+import ChartDetail from "./views/Dashboard/ChartDetail";
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
             <Route index element={<Dashboard />} />
               <Route path={"dashboard"} element={<Dashboard />} />
               <Route path={"dashboard/:id"} element={<Dashboard />} />
+              <Route path={"dashboard/:dashboardId/chart/:chartId"} element={<ChartDetail />} />
               <Route path={"chart"} element={<Chart />} />
               <Route path={"metric"} element={<Metric />} />
               <Route path={"contact"} element={<Contact />} />
