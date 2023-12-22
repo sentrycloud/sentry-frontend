@@ -1,5 +1,3 @@
-import "react-grid-layout/css/styles.css";
-import "react-resizable/css/styles.css";
 import React, {useEffect, useState} from "react";
 import {Button, message, Modal, Select, Space, Tag} from "antd";
 import {EditOutlined, MinusCircleOutlined, PlusCircleOutlined} from "@ant-design/icons";

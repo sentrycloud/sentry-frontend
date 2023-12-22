@@ -1,7 +1,7 @@
-import {Button, Col, Form, Input, Row, Select, Collapse, Popconfirm, Tooltip, Breadcrumb} from "antd";
+import {Button, Col, Form, Input, Row, Select, Collapse, Popconfirm, Tooltip, Breadcrumb, message} from "antd";
 import {useEffect, useState} from "react";
 import {CloseOutlined, PlusOutlined, QuestionCircleOutlined} from "@ant-design/icons";
-import {Link, useParams} from "react-router-dom";
+import {Link, useNavigate, useParams} from "react-router-dom";
 
 const chartTypeOptions = [
     {label:"line", value:"line"},
@@ -23,6 +23,7 @@ function ChartDetail() {
     const [lineList, setLineList] = useState([{name:'', metric:'', tags:{}, offset:0}])
     const [activeKeys, setActiveKeys] = useState(['0'])
     const params = useParams()
+    const navigate = useNavigate()
 
     useEffect(() => {
         console.log(`reload page, dashboardId=${params.dashboardId}, chartId=${params.chartId}`)
@@ -41,6 +42,38 @@ function ChartDetail() {
             .then((values) => {
                 console.log(values);
 
+                let chartParams = {}
+                chartParams.id = (params.chartId != null && params.chartId !== "create") ? parseInt(params.chartId) : 0
+                chartParams.dashboard_id = params.dashboardId != null ? parseInt(params.dashboardId) : 0
+                chartParams.name = values.chartName
+                chartParams.type = chartType
+                chartParams.aggregation = aggregationType
+                chartParams.down_sample = values.down_sample
+                if (chartType === 'topn') {
+                    chartParams.topn_limit = values.topnCount
+                }
+                chartParams.lines = [...lineList]
+
+                for (let i = 0; i < chartParams.lines.length; i++) {
+                    chartParams.lines[i].tags = JSON.stringify(chartParams.lines[i].tags)
+                }
+
+                fetch("/server/api/chart", {
+                    method: chartParams.id === 0 ? "PUT" : "POST",
+                    body: JSON.stringify(chartParams)
+                }).then(response => response.json())
+                    .then(response => {
+                        if (response['code'] === 0) {
+                            message.success("save chart success", 3)
+                            navigate(`/dashboard/${params.dashboardId}`)
+                        } else {
+                            message.error("save chart failed " + response['msg'], 3)
+                            console.error("save chart failed: " + response['msg'])
+                        }
+                    }).catch((reason) => {
+                        message.error("save chart failed: " + reason, 3)
+                        console.error(reason)
+                    })
 
             })
             .catch((info) => {
@@ -339,7 +372,7 @@ function ChartDetail() {
                 <Row gutter={16}>
                     <Col span={8}>
                         <Form.Item
-                            name="downsample"
+                            name="down_sample"
                             label="DownSample"
                             initialValue={"10s"}
                             rules={[

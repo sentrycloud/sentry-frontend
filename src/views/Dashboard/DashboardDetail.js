@@ -1,26 +1,46 @@
+import "react-grid-layout/css/styles.css";
+import "react-resizable/css/styles.css";
 import Chart from "./Chart";
-import {Button, Card, DatePicker, Select, Space, Tag, TimePicker} from "antd";
-import React, {useState} from "react";
+import {Button, Card, DatePicker, message, Select, Space} from "antd";
+import React, {useEffect, useState} from "react";
 import {Responsive, WidthProvider} from "react-grid-layout";
 import {autoRefreshOptions, timeSelect} from "./config";
 import {LineChartOutlined} from "@ant-design/icons";
-import ChartDetail from "./ChartDetail";
 import {useNavigate} from "react-router-dom";
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 const chartGridStyle = {width:'100%',height:'100%', border: '2px solid rgba(0, 0, 0, 0.05)'}
 
 function DashboardDetail({dashboard}) {
-    const [layout, setLayout] = useState([
-        {i: 'a', x: 0, y: 0, w: 4, h: 4, static: true},
-        {i: 'b', x: 4, y: 0, w: 4, h: 4},
-        {i: 'c', x: 8, y: 0, w: 4, h: 4}
-    ])
+    const [layout, setLayout] = useState([])
 
     const [showCustom, setShowCustom] = useState(false)
+    const [chartList, setChartList] = useState([])
     const navigate = useNavigate()
 
+    useEffect(() => {
+        fetch("/server/api/chartList", {
+            method: "POST",
+            body: JSON.stringify({"dashboard_id": dashboard.id})
+        }).then(response => response.json())
+            .then(response => {
+                if (response['code'] === 0) {
+                    setChartList(response['data'])
+                    setLayout(JSON.parse(dashboard.chart_layout))
+                } else {
+                    let msg = "get chart list failed " + response['msg']
+                    message.error(msg, 3)
+                    console.error(msg)
+                }
+            }).catch((reason) => {
+                let msg = "get chart list failed " + reason
+                message.error(msg, 3)
+                console.error(msg)
+            })
+    }, [dashboard.id])
+
     function onLayoutChange(newLayout) {
+        console.log("onLayoutChange, newLayout=" + newLayout)
         setLayout(newLayout)
     }
 
@@ -88,6 +108,11 @@ function DashboardDetail({dashboard}) {
         <Button type={"primary"} onClick={handleRefresh} >Refresh</Button>
     </div>;
 
+    let chartGridList = chartList.map(chart =>
+        <div key={chart.id} style={chartGridStyle}> <Chart chart={chart}/> </div>
+    )
+
+    console.log("layout=" + JSON.stringify(layout))
 
     return (
         <div>
@@ -108,9 +133,7 @@ function DashboardDetail({dashboard}) {
                     cols={{ lg: 12, md: 12, sm: 6, xs: 4, xxs: 2 }}
                     onLayoutChange={onLayoutChange}
                 >
-                    <div key='a' style={chartGridStyle}> <Chart /> </div>
-                    <div key='b' style={chartGridStyle}> <Chart /> </div>
-                    <div key='c' style={chartGridStyle}> <Chart /> </div>
+                    {chartGridList}
                 </ResponsiveGridLayout>
             </Card>
         </div>

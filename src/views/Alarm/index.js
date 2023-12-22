@@ -1,7 +1,8 @@
+import Chart from "../Dashboard/Chart";
 
 function Alarm() {
     return (
-        <h2>Alarm</h2>
+        <Chart chart={{name: "test"}}/>
     )
 }
 
