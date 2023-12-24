@@ -17,11 +17,6 @@ const menuItems = [
         label: (<Link  to={"/dashboard"}> Dashboards </Link>),
     },
     {
-        key: '/chart',
-        icon: <LineChartOutlined />,
-        label: (<Link  to={"/chart"}> Charts </Link>),
-    },
-    {
         key: '/metric',
         icon: <CompassOutlined />,
         label: (<Link  to={"/metric"}> Metrics </Link>),

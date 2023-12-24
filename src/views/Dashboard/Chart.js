@@ -38,6 +38,10 @@ function Chart ({chart}) {
 
     console.log("draw line for " + chart.name)
 
+    function tsToDate(ts) {
+        return new Date(ts * 1000).toLocaleString()
+    }
+
     const config = {
         data,
         xField: 'ts',
@@ -45,11 +49,21 @@ function Chart ({chart}) {
         seriesField: 'name',
         axis: {
             x: {
-                labelFormatter: (val) => new Date(val * 1000).toLocaleString(),
+                labelAutoRotate: false,
+                labelFormatter: (val) => tsToDate(val),
             },
         },
         autoFit: true,
-        title: chart.name
+        title: chart.name,
+        interaction: {
+            brushFilter: true
+        },
+        tooltip: {
+            title: {
+                channel: 'x',
+                valueFormatter: (ts) => tsToDate(ts),
+            }
+        }
     };
 
     return <Line {...config} />;

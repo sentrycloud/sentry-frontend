@@ -1,7 +1,6 @@
 import {BrowserRouter, Routes, Route} from "react-router-dom";
 import CoreLayout from "./layouts/CoreLayout";
 import Dashboard from "./views/Dashboard";
-import Chart from "./views/Chart";
 import Metric from "./views/Metric";
 import Contact from "./views/Contact";
 import Alarm from "./views/Alarm";
@@ -17,7 +16,6 @@ function App() {
               <Route path={"dashboard"} element={<Dashboard />} />
               <Route path={"dashboard/:id"} element={<Dashboard />} />
               <Route path={"dashboard/:dashboardId/chart/:chartId"} element={<ChartDetail />} />
-              <Route path={"chart"} element={<Chart />} />
               <Route path={"metric"} element={<Metric />} />
               <Route path={"contact"} element={<Contact />} />
               <Route path={"alarm"} element={<Alarm />} />
