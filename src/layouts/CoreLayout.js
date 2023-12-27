@@ -3,7 +3,7 @@ import React, {useEffect, useState} from 'react';
 import {
     CompassOutlined,
     ContactsOutlined,
-    DashboardOutlined, LineChartOutlined,
+    DashboardOutlined,
     MenuFoldOutlined,
     MenuUnfoldOutlined, PhoneOutlined,
 } from '@ant-design/icons';

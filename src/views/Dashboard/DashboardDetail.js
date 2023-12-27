@@ -5,7 +5,7 @@ import {Button, Card, DatePicker, message, Select, Space} from "antd";
 import React, {useEffect, useState} from "react";
 import {Responsive, WidthProvider} from "react-grid-layout";
 import {autoRefreshOptions, timeSelect} from "./config";
-import {LineChartOutlined} from "@ant-design/icons";
+import {DeleteOutlined, EditOutlined, LineChartOutlined} from "@ant-design/icons";
 import {useNavigate} from "react-router-dom";
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
@@ -13,7 +13,8 @@ const chartGridStyle = {width:'100%',height:'100%', border: '2px solid rgba(0, 0
 
 function DashboardDetail({dashboard}) {
     const [layout, setLayout] = useState([])
-
+    const [timeOption, setTimeOption] = useState({label:'Last 1 hour', value: '60'})
+    const [autoRefreshOption, setAutoRefreshOption] = useState({label:'Off', value: '0'})
     const [showCustom, setShowCustom] = useState(false)
     const [chartList, setChartList] = useState([])
     const navigate = useNavigate()
@@ -45,19 +46,20 @@ function DashboardDetail({dashboard}) {
     }
 
     function handleTime(option) {
-        console.log(option.title)
-
+        setTimeOption(option)
         if (option.value === "custom") {
             setShowCustom(true)
+        } else {
+            setShowCustom(false)
         }
     }
 
     function handleCustom(value) {
-
+        console.log("handleCustom: from=" + new Date(value[0]).toLocaleString() + ", to=" + new Date(value[1]).toLocaleString())
     }
 
-    function handleAutoRefresh(value) {
-        console.log(value.title)
+    function handleAutoRefresh(option) {
+        setAutoRefreshOption(option)
     }
 
     function handleRefresh() {
@@ -69,15 +71,54 @@ function DashboardDetail({dashboard}) {
         navigate(`/dashboard/${dashboard.id}/chart/create`)
     }
 
+    function handleEditChart() {
+        console.log(`edit chart for ${dashboard.name}`)
+    }
+
+    function handleDeleteChart() {
+        console.log(`delete chart for ${dashboard.name}`)
+    }
+
+
     function handleChangeLayout() {
         console.log(`handle change layout for ${dashboard.name}`)
+
+        setLayout((prevLayouts) => prevLayouts.map((item)=> {
+            return {...item, ...{ static: false}}
+        }))
+    }
+
+    function handleSaveLayout() {
+        console.log(`save layout for ${dashboard.name}`)
+
+        let newLayout = layout.map((item)=> {
+            return {...item, ...{ static: true}}
+        });
+
+        setLayout(newLayout)
+
+        dashboard.chart_layout = newLayout
+
+        let record = {...dashboard}
+        record.chart_layout = JSON.stringify(record.chart_layout)
+        fetch("/server/api/dashboard", {
+            method: "POST",
+            body: JSON.stringify(record)
+        }).then(response => response.json())
+            .then(response => {
+                if (response['code'] === 0) {
+                    message.success("update dashboard layout success", 3)
+                } else {
+                    console.error(response['msg'])
+                }
+            }).catch(console.error)
     }
 
     let operateList= <div>
         <span>Time: </span>
         <Select labelInValue={true}
                 style={{width:150}}
-                value={"Last 1h"}
+                value={timeOption.label}
                 optionLabelProp="label"
                 optionFilterProp="label"
                 onChange={handleTime}
@@ -98,18 +139,28 @@ function DashboardDetail({dashboard}) {
         &nbsp;&nbsp;
         <Select labelInValue={true}
                 style={{width:80}}
-                value={''}
+                value={autoRefreshOption.value}
                 optionLabelProp="label"
                 optionFilterProp="label"
                 onChange={handleAutoRefresh}
                 options={autoRefreshOptions}
         />
         &nbsp;&nbsp;
-        <Button type={"primary"} onClick={handleRefresh} >Refresh</Button>
+        <Button type={"primary"} onClick={handleRefresh}>Refresh</Button>
     </div>;
 
+    let chartButtons = <div style={{height: '30px'}}>
+        <Button type={"primary"} shape={"circle"} icon={<EditOutlined/>} onClick={handleEditChart} />
+        &nbsp;
+        <Button type={"primary"} shape={"circle"} danger={true} icon={<DeleteOutlined/> } onClick={handleDeleteChart} />
+    </div>
+    let inChangeLayout = layout.length > 0 && !layout[0].static
     let chartGridList = chartList.map(chart =>
-        <div key={chart.id} style={chartGridStyle}> <Chart chart={chart}/> </div>
+        <div key={chart.id} style={chartGridStyle}>
+            <Card title={chart.name} bordered={false} extra={chartButtons}>
+               <div style={{height: '280px', width: '100%'}}> <Chart chart={chart}/> </div>
+            </Card>
+        </div>
     )
 
     console.log("layout=" + JSON.stringify(layout))
@@ -119,7 +170,9 @@ function DashboardDetail({dashboard}) {
             <Card title={dashboard.name} bordered={false} extra={operateList}>
                 <Space direction={"horizontal"} size={"middle"}>
                     <Button icon={<LineChartOutlined/>} type={"primary"} onClick={handleAddChart}>Add Chart</Button>
-                    <Button type={"primary"} onClick={handleChangeLayout} >Change Layout</Button>
+
+                    {!inChangeLayout && <Button type={"primary"} onClick={handleChangeLayout} >Change Layout</Button>}
+                    {inChangeLayout && <Button type={"primary"} onClick={handleSaveLayout} >Save Layout</Button>}
                 </Space>
                 &nbsp;&nbsp;
 

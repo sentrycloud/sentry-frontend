@@ -19,10 +19,13 @@ function Chart ({chart}) {
                 if (json['code'] === 0) {
                     let dataPoints = []
 
-                    json['data'].map(line =>
-                        line.dps.map(dataPoint =>
-                            dataPoints.push({...dataPoint, name: line.name})
-                        )
+                    json['data'].map(line => {
+                            if (line.dps != null && line.dps.length > 0) {
+                                line.dps.map(dataPoint =>
+                                    dataPoints.push({...dataPoint, name: line.name})
+                                )
+                            }
+                        }
                     )
                     setData(dataPoints)
                 } else {
@@ -54,7 +57,6 @@ function Chart ({chart}) {
             },
         },
         autoFit: true,
-        title: chart.name,
         interaction: {
             brushFilter: true
         },

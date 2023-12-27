@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from "react";
-import {Button, message, Modal, Select, Space, Tag} from "antd";
+import {Button, message, Popconfirm, Select, Space, Tag} from "antd";
 import {EditOutlined, MinusCircleOutlined, PlusCircleOutlined} from "@ant-design/icons";
 import FormModal from "../../components/FormModal";
 import {useNavigate, useParams} from "react-router-dom";
@@ -19,15 +19,23 @@ function Dashboard() {
     const [open, setOpen] = useState(false)
     const [editDashboard, setEditDashboard] = useState(null)
     const [dashboardList, setDashboardList] = useState([])
-    const [deleteCheck, setDeleteCheck] = useState(false)
     const params = useParams()
     const navigate = useNavigate()
 
     useEffect(() => {
         fetch(DashboardURL)
             .then(response => response.json())
-            .then(response => setDashboardList(response['data']))
-            .catch(console.error)
+            .then(response => {
+                if (response['code'] === 0) {
+                    setDashboardList(response['data'])
+                } else {
+                    let errMsg = "get dashboard list failed: " + response['msg']
+                    message.error(errMsg, 3)
+                }
+            }).catch(reason => {
+                let errMsg = "get dashboard list failed: " + reason
+                message.error(errMsg, 3)
+            })
     }, [])
 
     function handleChangeDashboard(option){
@@ -102,8 +110,6 @@ function Dashboard() {
                     console.error(response['msg'])
                 }
             }).catch(console.error)
-
-        setDeleteCheck(false)
     }
 
     function getCurrentDashboard() {
@@ -156,7 +162,11 @@ function Dashboard() {
                     <Tag bordered={false}>Dashboard Operation: </Tag>
                     <Button icon={<PlusCircleOutlined/>} type={"primary"} onClick={onAddDashboard}>Add Dashboard</Button>
                     <Button icon={<EditOutlined/>} type={"primary"} onClick={onEditDashboard}>Edit Dashboard</Button>
-                    <Button icon={<MinusCircleOutlined/>} type={"primary"} onClick={()=>setDeleteCheck(true) }>Delete Dashboard</Button>
+
+                    <Popconfirm placement="leftTop" title={"Are you sure to delete this dashboard?"}
+                                onConfirm={(e) => onDeleteDashboard()}>
+                        <Button icon={<MinusCircleOutlined/>} type={"primary"} danger={true} onClick={e=> e.stopPropagation()}>Delete Dashboard</Button>
+                    </Popconfirm>
                 </Space>
             </Space>
 
@@ -167,9 +177,6 @@ function Dashboard() {
             {editDashboard && <FormModal open={true} title={"Update Dashboard"} onUpdate={onUpdateDashboard}
                                          onCancel={() => setEditDashboard(null)}
                                          formItems={dashboardFormOptions} record={editDashboard}/>}
-
-            <Modal open={deleteCheck} title={"Are you sure to delete current dashboard?"}
-                   onCancel={()=> setDeleteCheck(false)} onOk={onDeleteDashboard} />
         </div>
     );
 }
