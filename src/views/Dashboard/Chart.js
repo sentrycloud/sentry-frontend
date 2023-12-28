@@ -2,18 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Line } from '@ant-design/plots';
 import {message} from "antd";
 
-function Chart ({chart}) {
+function Chart ({timeRange, chart}) {
     const [data, setData] = useState([]);
 
     useEffect(() => {
         console.log("fetch data for " + chart.name)
-        asyncFetch();
-    }, []);
-
-    const asyncFetch = () => {
         fetch('/server/api/chartData', {
             method: 'POST',
-            body: JSON.stringify({chart_id: chart.id})
+            body: JSON.stringify({start: timeRange.start, end: timeRange.end, ...chart})
         }).then((response) => response.json())
             .then((json) => {
                 if (json['code'] === 0) {
@@ -37,7 +33,7 @@ function Chart ({chart}) {
             .catch((error) => {
                 console.log('fetch data failed', error);
             });
-    };
+    }, [timeRange.end, timeRange.start]);
 
     console.log("draw line for " + chart.name)
 
@@ -56,6 +52,7 @@ function Chart ({chart}) {
                 labelFormatter: (val) => tsToDate(val),
             },
         },
+        title: chart.name,
         autoFit: true,
         interaction: {
             brushFilter: true

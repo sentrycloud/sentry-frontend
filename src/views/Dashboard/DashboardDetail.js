@@ -1,20 +1,32 @@
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 import Chart from "./Chart";
-import {Button, Card, DatePicker, message, Select, Space} from "antd";
+import {Button, Card, DatePicker, FloatButton, message, Select, Space, Tooltip} from "antd";
 import React, {useEffect, useState} from "react";
 import {Responsive, WidthProvider} from "react-grid-layout";
 import {autoRefreshOptions, timeSelect} from "./config";
-import {DeleteOutlined, EditOutlined, LineChartOutlined} from "@ant-design/icons";
+import {
+    DeleteOutlined,
+    EditOutlined,
+    LineChartOutlined, MenuOutlined,
+    ReloadOutlined
+} from "@ant-design/icons";
 import {useNavigate} from "react-router-dom";
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 const chartGridStyle = {width:'100%',height:'100%', border: '2px solid rgba(0, 0, 0, 0.05)'}
+const HeightUnit = 80
+
+function getCurrentTimestamp() {
+    return Math.floor(new Date().getTime() / 1000)
+}
 
 function DashboardDetail({dashboard}) {
-    const [layout, setLayout] = useState([])
+    const [layout, setLayout] = useState(JSON.parse(dashboard.chart_layout))
     const [timeOption, setTimeOption] = useState({label:'Last 1 hour', value: '60'})
     const [autoRefreshOption, setAutoRefreshOption] = useState({label:'Off', value: '0'})
+    const [autoRefreshId, setAutoRefreshId] = useState(0)
+    const [timeRange, setTimeRange] = useState({start: getCurrentTimestamp() - 3600, end: getCurrentTimestamp()})
     const [showCustom, setShowCustom] = useState(false)
     const [chartList, setChartList] = useState([])
     const navigate = useNavigate()
@@ -47,23 +59,42 @@ function DashboardDetail({dashboard}) {
 
     function handleTime(option) {
         setTimeOption(option)
-        if (option.value === "custom") {
+        if (option.label === "custom") {
             setShowCustom(true)
         } else {
             setShowCustom(false)
+            let currentTime = getCurrentTimestamp()
+            setTimeRange({start: currentTime - parseInt(option.value) * 60, end: currentTime})
         }
     }
 
     function handleCustom(value) {
         console.log("handleCustom: from=" + new Date(value[0]).toLocaleString() + ", to=" + new Date(value[1]).toLocaleString())
+        let startTime = Math.floor(new Date(value[0]).getTime() / 1000)
+        let endTime = Math.floor(new Date(value[1]).getTime() / 1000)
+        setTimeRange({start: startTime, end: endTime})
     }
 
     function handleAutoRefresh(option) {
         setAutoRefreshOption(option)
+
+        if (autoRefreshId !== 0) {
+            window.clearInterval(autoRefreshId)
+        }
+
+        if (option.value !== '0') {
+            let refreshId = window.setInterval(handleRefresh, parseInt(option.value) * 1000)
+            setAutoRefreshId(refreshId)
+        } else {
+            setAutoRefreshId(0)
+        }
     }
 
     function handleRefresh() {
-        console.log("refresh")
+        if (timeOption.label !== "custom") {
+            let currentTime = getCurrentTimestamp()
+            setTimeRange({start: currentTime - parseInt(timeOption.value) * 60, end: currentTime})
+        }
     }
 
     function handleAddChart() {
@@ -78,7 +109,6 @@ function DashboardDetail({dashboard}) {
     function handleDeleteChart() {
         console.log(`delete chart for ${dashboard.name}`)
     }
-
 
     function handleChangeLayout() {
         console.log(`handle change layout for ${dashboard.name}`)
@@ -139,27 +169,31 @@ function DashboardDetail({dashboard}) {
         &nbsp;&nbsp;
         <Select labelInValue={true}
                 style={{width:80}}
-                value={autoRefreshOption.value}
+                value={autoRefreshOption.label}
                 optionLabelProp="label"
                 optionFilterProp="label"
                 onChange={handleAutoRefresh}
                 options={autoRefreshOptions}
         />
         &nbsp;&nbsp;
-        <Button type={"primary"} onClick={handleRefresh}>Refresh</Button>
+        <Tooltip title={"Refresh"}>
+            <Button type={"primary"} onClick={handleRefresh} shape={"circle"} icon={<ReloadOutlined/>}/>
+        </Tooltip>
     </div>;
-
-    let chartButtons = <div style={{height: '30px'}}>
-        <Button type={"primary"} shape={"circle"} icon={<EditOutlined/>} onClick={handleEditChart} />
-        &nbsp;
-        <Button type={"primary"} shape={"circle"} danger={true} icon={<DeleteOutlined/> } onClick={handleDeleteChart} />
-    </div>
+    
     let inChangeLayout = layout.length > 0 && !layout[0].static
     let chartGridList = chartList.map(chart =>
         <div key={chart.id} style={chartGridStyle}>
-            <Card title={chart.name} bordered={false} extra={chartButtons}>
-               <div style={{height: '280px', width: '100%'}}> <Chart chart={chart}/> </div>
-            </Card>
+            <FloatButton.Group
+                trigger="hover"
+                type="primary"
+                icon={<MenuOutlined />}
+            >
+                <FloatButton icon={<EditOutlined/>} onClick={handleEditChart}/>
+                <FloatButton icon={<DeleteOutlined/>} onClick={handleDeleteChart}/>
+            </FloatButton.Group>
+
+            <Chart timeRange={timeRange}  chart={chart}/>
         </div>
     )
 
@@ -181,7 +215,7 @@ function DashboardDetail({dashboard}) {
                     layouts={{"lg":layout}}
                     preventCollision={true}
                     autoSize={true}
-                    rowHeight={80}
+                    rowHeight={HeightUnit}
                     breakpoints={{lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
                     cols={{ lg: 12, md: 12, sm: 6, xs: 4, xxs: 2 }}
                     onLayoutChange={onLayoutChange}
