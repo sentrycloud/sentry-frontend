@@ -46,6 +46,7 @@ function Chart ({timeRange, chart}) {
         xField: 'ts',
         yField: 'v',
         seriesField: 'name',
+        colorField: 'name',
         axis: {
             x: {
                 labelAutoRotate: false,

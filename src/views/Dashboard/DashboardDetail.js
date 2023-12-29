@@ -1,15 +1,15 @@
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 import Chart from "./Chart";
-import {Button, Card, DatePicker, FloatButton, message, Select, Space, Tooltip} from "antd";
+import {Button, Card, DatePicker, FloatButton, message, Popconfirm, Select, Tooltip} from "antd";
 import React, {useEffect, useState} from "react";
 import {Responsive, WidthProvider} from "react-grid-layout";
 import {autoRefreshOptions, timeSelect} from "./config";
 import {
     DeleteOutlined,
     EditOutlined,
-    LineChartOutlined, MenuOutlined,
-    ReloadOutlined
+    LineChartOutlined, LockOutlined, MenuOutlined,
+    ReloadOutlined, UnlockOutlined
 } from "@ant-design/icons";
 import {useNavigate} from "react-router-dom";
 
@@ -21,7 +21,7 @@ function getCurrentTimestamp() {
     return Math.floor(new Date().getTime() / 1000)
 }
 
-function DashboardDetail({dashboard}) {
+function DashboardDetail({dashboard, onSaveLayout}) {
     const [layout, setLayout] = useState(JSON.parse(dashboard.chart_layout))
     const [timeOption, setTimeOption] = useState({label:'Last 1 hour', value: '60'})
     const [autoRefreshOption, setAutoRefreshOption] = useState({label:'Off', value: '0'})
@@ -99,15 +99,35 @@ function DashboardDetail({dashboard}) {
 
     function handleAddChart() {
         console.log(`add chart for ${dashboard.name}`)
-        navigate(`/dashboard/${dashboard.id}/chart/create`)
+        navigate(`/dashboard/${dashboard.id}/chart/0`) // chartId 0 means create chart
     }
 
-    function handleEditChart() {
-        console.log(`edit chart for ${dashboard.name}`)
+    function handleEditChart(chart) {
+        console.log(`edit chart for ${dashboard.name}.${chart.name}`)
+        navigate(`/dashboard/${dashboard.id}/chart/${chart.id}`)
     }
 
-    function handleDeleteChart() {
-        console.log(`delete chart for ${dashboard.name}`)
+    function handleDeleteChart(chart) {
+        console.log(`delete chart for ${dashboard.name}.${chart.name}`)
+
+        fetch("/server/api/chart", {
+            method: "DELETE",
+            body: JSON.stringify(chart)
+        }).then(response => response.json())
+            .then(response => {
+                if (response['code'] === 0) {
+                    message.success("delete chart success", 3)
+                    setChartList(prevChartList => prevChartList.filter(item => item.id !== chart.id))
+                } else {
+                    let errMsg = "delete chart failed: " + response['msg']
+                    message.error(errMsg)
+                    console.error(errMsg)
+                }
+            }).catch(reason => {
+                let errMsg = "delete chart failed: " + reason
+                message.error(errMsg)
+                console.error(errMsg)
+        })
     }
 
     function handleChangeLayout() {
@@ -122,28 +142,14 @@ function DashboardDetail({dashboard}) {
         console.log(`save layout for ${dashboard.name}`)
 
         let newLayout = layout.map((item)=> {
-            return {...item, ...{ static: true}}
+            return {...item, static: true}
         });
 
-        setLayout(newLayout)
-
-        dashboard.chart_layout = newLayout
-
-        let record = {...dashboard}
-        record.chart_layout = JSON.stringify(record.chart_layout)
-        fetch("/server/api/dashboard", {
-            method: "POST",
-            body: JSON.stringify(record)
-        }).then(response => response.json())
-            .then(response => {
-                if (response['code'] === 0) {
-                    message.success("update dashboard layout success", 3)
-                } else {
-                    console.error(response['msg'])
-                }
-            }).catch(console.error)
+        dashboard.chart_layout = JSON.stringify(newLayout)
+        onSaveLayout(dashboard)
     }
 
+    let inChangeLayout = layout.length > 0 && !layout[0].static
     let operateList= <div>
         <span>Time: </span>
         <Select labelInValue={true}
@@ -179,18 +185,30 @@ function DashboardDetail({dashboard}) {
         <Tooltip title={"Refresh"}>
             <Button type={"primary"} onClick={handleRefresh} shape={"circle"} icon={<ReloadOutlined/>}/>
         </Tooltip>
+        &nbsp;&nbsp;
+        <Tooltip title={"Add Chart"}>
+            <Button type={"primary"} onClick={handleAddChart} shape={"circle"} icon={<LineChartOutlined/>}/>
+        </Tooltip>
+        &nbsp;&nbsp;
+        {!inChangeLayout && <Tooltip title={"Change Layout"}>
+            <Button type={"primary"} onClick={handleChangeLayout} shape={"circle"} icon={<UnlockOutlined/>}/> </Tooltip> }
+        {inChangeLayout && <Tooltip title={"Save Layout"}>
+            <Button type={"primary"} onClick={handleSaveLayout} shape={"circle"} icon={<LockOutlined/>}/> </Tooltip> }
     </div>;
-    
-    let inChangeLayout = layout.length > 0 && !layout[0].static
+
     let chartGridList = chartList.map(chart =>
         <div key={chart.id} style={chartGridStyle}>
             <FloatButton.Group
+                style={{position: 'absolute', right: '10px', top: '10px'}}
                 trigger="hover"
                 type="primary"
-                icon={<MenuOutlined />}
+                icon={<MenuOutlined/>}
             >
-                <FloatButton icon={<EditOutlined/>} onClick={handleEditChart}/>
-                <FloatButton icon={<DeleteOutlined/>} onClick={handleDeleteChart}/>
+                <FloatButton tooltip={"edit chart"} icon={<EditOutlined/>} onClick={() => handleEditChart(chart)}/>
+                <Popconfirm placement="leftTop" title={"Are you sure to delete this chart?"}
+                            onConfirm={()=> handleDeleteChart(chart)}>
+                    <FloatButton tooltip={"delete chart"} icon={<DeleteOutlined/>} onClick={e=> e.stopPropagation()}/>
+                </Popconfirm>
             </FloatButton.Group>
 
             <Chart timeRange={timeRange}  chart={chart}/>
@@ -202,14 +220,6 @@ function DashboardDetail({dashboard}) {
     return (
         <div>
             <Card title={dashboard.name} bordered={false} extra={operateList}>
-                <Space direction={"horizontal"} size={"middle"}>
-                    <Button icon={<LineChartOutlined/>} type={"primary"} onClick={handleAddChart}>Add Chart</Button>
-
-                    {!inChangeLayout && <Button type={"primary"} onClick={handleChangeLayout} >Change Layout</Button>}
-                    {inChangeLayout && <Button type={"primary"} onClick={handleSaveLayout} >Save Layout</Button>}
-                </Space>
-                &nbsp;&nbsp;
-
                 <ResponsiveGridLayout
                     className="layout"
                     layouts={{"lg":layout}}

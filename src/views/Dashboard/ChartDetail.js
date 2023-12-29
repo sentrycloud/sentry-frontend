@@ -1,4 +1,17 @@
-import {Button, Col, Form, Input, Row, Select, Collapse, Popconfirm, Tooltip, Breadcrumb, message} from "antd";
+import {
+    Button,
+    Col,
+    Form,
+    Input,
+    Row,
+    Select,
+    Collapse,
+    Popconfirm,
+    Tooltip,
+    Breadcrumb,
+    message,
+    InputNumber
+} from "antd";
 import {useEffect, useState} from "react";
 import {CloseOutlined, PlusOutlined, QuestionCircleOutlined} from "@ant-design/icons";
 import {Link, useNavigate, useParams} from "react-router-dom";
@@ -18,8 +31,8 @@ const aggregationTypeOptions = [
 
 function ChartDetail() {
     const [form] = Form.useForm()
-    const [chartType, setChartType] = useState("line")
-    const [aggregationType, setAggregationType] = useState("sum")
+    const [chartParams, setChartParams] = useState(
+        {id: 0, name:"", type:"line", aggregation: "sum", down_sample:"10s", topn_limit:10})
     const [lineList, setLineList] = useState([{name:'', metric:'', tags:{}, offset:0}])
     const [activeKeys, setActiveKeys] = useState(['0'])
     const params = useParams()
@@ -27,14 +40,39 @@ function ChartDetail() {
 
     useEffect(() => {
         console.log(`reload page, dashboardId=${params.dashboardId}, chartId=${params.chartId}`)
+        let chartId = parseInt(params.chartId)
+        if (chartId !== 0) {
+            fetch(`/server/api/chart?id=${chartId}`)
+                .then(response => response.json())
+                .then(response => {
+                    if (response['code'] === 0) {
+                        let chart = response['data']
+                        let lines = chart.lines
+                        for (let i = 0; i < lines.length; i++) {
+                            lines[i].tags = JSON.parse(lines[i].tags)
+                        }
+
+                        setChartParams(chart)
+                        setLineList(lines)
+                    } else {
+                        message.error("save chart failed " + response['msg'], 3)
+                        console.error("save chart failed: " + response['msg'])
+                    }
+                }).catch((reason) => {
+                message.error("save chart failed: " + reason, 3)
+                console.error(reason)
+            })
+        }
     }, [])
 
     function onChartTypeChange(option) {
-        setChartType(option.value)
+        chartParams.type = option.value
+        setChartParams(chartParams)
     }
 
     function onAggregationTypeChange(option) {
-        setAggregationType(option.value)
+        chartParams.aggregation = option.value
+        setChartParams(chartParams)
     }
 
     function onSaveChart() {
@@ -42,14 +80,11 @@ function ChartDetail() {
             .then((values) => {
                 console.log(values);
 
-                let chartParams = {}
-                chartParams.id = (params.chartId != null && params.chartId !== "create") ? parseInt(params.chartId) : 0
-                chartParams.dashboard_id = params.dashboardId != null ? parseInt(params.dashboardId) : 0
+                chartParams.id = parseInt(params.chartId)
+                chartParams.dashboard_id = parseInt(params.dashboardId)
                 chartParams.name = values.chartName
-                chartParams.type = chartType
-                chartParams.aggregation = aggregationType
                 chartParams.down_sample = values.down_sample
-                if (chartType === 'topn') {
+                if (chartParams.type === 'topN') {
                     chartParams.topn_limit = values.topnCount
                 }
                 chartParams.lines = [...lineList]
@@ -92,7 +127,7 @@ function ChartDetail() {
         e.stopPropagation()
 
         console.log(`handleCopyLine ${index}`)
-        setLineList(prevLineList => [...prevLineList, {...prevLineList[index]}])
+        setLineList(prevLineList => [...prevLineList, {...prevLineList[index], id:0}])
         setActiveKeys(prevActiveKey => [...prevActiveKey, lineList.length.toString()])
     }
 
@@ -145,9 +180,6 @@ function ChartDetail() {
         setLineList(newLineList)
     }
 
-    console.log(lineList)
-    console.log(activeKeys)
-
     function onLineChange(index, key, v) {
         console.log(`onLineChange, index=${index} key=${key}, v=${v}`)
 
@@ -199,7 +231,22 @@ function ChartDetail() {
         return tagsList;
     }
 
+    console.log(chartParams)
+    console.log(lineList)
+    console.log(activeKeys)
+
+    form.setFieldsValue({
+        chartName: chartParams.name,
+        chartType: {label:chartParams.type, value:chartParams.type},
+        aggregationType: {label:chartParams.aggregation, value:chartParams.aggregation},
+        down_sample: chartParams.down_sample,
+    })
+
     let lineEditList = lineList.map((line, index) => {
+        form.setFieldValue("name." + index, line.name)
+        form.setFieldValue("metric." + index, line.metric)
+        form.setFieldValue("offset." + index, line.offset)
+
         return {
             key : index,
             label : line.name ? line.name : "line" + index,
@@ -231,7 +278,7 @@ function ChartDetail() {
                                 <Input key={index} onChange={(e)=>onLineChange(index, 'name', e.target.value)}/>
                             </Form.Item>
                         </Col>
-                        <Col span={6}>
+                        <Col span={8}>
                             <Form.Item
                                 key={index}
                                 name={"metric." + index}
@@ -248,7 +295,7 @@ function ChartDetail() {
                             </Form.Item>
                         </Col>
 
-                        <Col span={8}>
+                        <Col span={6}>
                             <Form.Item
                                 key={index}
                                 label={(
@@ -268,7 +315,7 @@ function ChartDetail() {
                                     },
                                 ]}
                             >
-                                <Input key={index} onChange={(e)=>onLineChange(index, 'offset', e.target.value)}/>
+                                <InputNumber key={index} onChange={(value)=>onLineChange(index, 'offset', value)}/>
                             </Form.Item>
                         </Col>
                     </Row>
@@ -292,8 +339,8 @@ function ChartDetail() {
 
     let breadItems = [
         {title: <Link to="/">Home</Link>},
-        {title: <Link to="/chart">Chart</Link>},
-        {title: "Create"}
+        {title: <Link to="/dashboard">Dashboard</Link>},
+        {title: <Link to={`/dashboard/${params.dashboardId}/chart/${params.chartId}`}>chart</Link>}
     ]
 
     return (
@@ -317,7 +364,7 @@ function ChartDetail() {
                         <Form.Item
                             name="chartName"
                             label="Chart Name"
-                            initialValue={""}
+                            initialValue={chartParams.name}
                             rules={[
                                 {
                                     required: true,
@@ -332,7 +379,7 @@ function ChartDetail() {
                         <Form.Item
                             name="chartType"
                             label="Chart Type"
-                            initialValue={{label:chartType, value:chartType}}
+                            initialValue={{label:chartParams.type, value:chartParams.type}}
                             rules={[
                                 {
                                     required: true,
@@ -352,7 +399,7 @@ function ChartDetail() {
                         <Form.Item
                             name="aggregationType"
                             label="Aggregation Type"
-                            initialValue={{label:aggregationType, value:aggregationType}}
+                            initialValue={{label:chartParams.aggregation, value:chartParams.aggregation}}
                             rules={[
                                 {
                                     required: true,
@@ -374,7 +421,7 @@ function ChartDetail() {
                         <Form.Item
                             name="down_sample"
                             label="DownSample"
-                            initialValue={"10s"}
+                            initialValue={chartParams.down_sample}
                             rules={[
                                 {
                                     required: true,
@@ -385,11 +432,11 @@ function ChartDetail() {
                             <Input/>
                         </Form.Item>
                     </Col>
-                    {chartType === "topN" && <Col span={8}>
+                    {chartParams.type === "topN" && <Col span={8}>
                         <Form.Item
                             name="topnCount"
                             label="topN Count"
-                            initialValue={"10"}
+                            initialValue={chartParams.topn_limit}
                             rules={[
                                 {
                                     required: true,
@@ -397,7 +444,7 @@ function ChartDetail() {
                                 },
                             ]}
                         >
-                            <Input/>
+                            <InputNumber/>
                         </Form.Item>
                     </Col>}
 

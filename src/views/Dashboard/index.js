@@ -170,7 +170,7 @@ function Dashboard() {
                 </Space>
             </Space>
 
-            {currentDashboard && <DashboardDetail dashboard={currentDashboard} /> }
+            {currentDashboard && <DashboardDetail dashboard={currentDashboard} onSaveLayout={onUpdateDashboard}/> }
 
             <FormModal open={open} title={"Create Dashboard"} onCreate={onCreateDashboard}
                        onCancel={() => {setOpen(false)}} formItems={dashboardFormOptions} />
