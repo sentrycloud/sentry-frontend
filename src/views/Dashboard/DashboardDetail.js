@@ -69,13 +69,24 @@ function DashboardDetail({dashboard, onUpdateDashboard}) {
 
             let newLayout = [...oldLayout, {w: 4, h: 4, x: 0, y: maxHeight, i: newChart.id.toString(), moved:false,static:true}]
             dashboard.chart_layout = JSON.stringify(newLayout)
+            setLayout(JSON.parse(dashboard.chart_layout))
             onUpdateDashboard(dashboard)
         }
     }
 
     function onLayoutChange(newLayout, allLayouts) {
         console.log("onLayoutChange, newLayout=" + newLayout + ", allLayouts=" + allLayouts)
+        for (let i = 0 ; i < newLayout.length; i++) {
+            let item = newLayout[i]
+            console.log("i=" + item.i + ", x=" + item.x + ", y=" + item.y + ",w="+ item.w + ",h=" + item.h)
+            if (item.w === 1 && item.h === 1) {
+                // filter layout change with buggy onLayoutChange
+                return
+            }
+        }
+
         if (newLayout.length === chartList.length) {
+            console.log("set new layout")
             setLayout(newLayout)
         }
     }
@@ -143,6 +154,7 @@ function DashboardDetail({dashboard, onUpdateDashboard}) {
                     setChartList(prevChartList => prevChartList.filter(item => item.id !== chart.id))
                     let newLayout = layout.filter(item => parseInt(item.i) !== chart.id)
                     dashboard.chart_layout = JSON.stringify(newLayout)
+                    setLayout(JSON.parse(dashboard.chart_layout))
                     onUpdateDashboard(dashboard)
                 } else {
                     let errMsg = "delete chart failed: " + response['msg']
@@ -172,6 +184,7 @@ function DashboardDetail({dashboard, onUpdateDashboard}) {
         });
 
         dashboard.chart_layout = JSON.stringify(newLayout)
+        setLayout(newLayout)
         onUpdateDashboard(dashboard)
     }
 
