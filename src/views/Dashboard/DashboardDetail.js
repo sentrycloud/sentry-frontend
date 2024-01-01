@@ -21,7 +21,7 @@ function getCurrentTimestamp() {
     return Math.floor(new Date().getTime() / 1000)
 }
 
-function DashboardDetail({dashboard, onSaveLayout}) {
+function DashboardDetail({dashboard, onUpdateDashboard}) {
     const [layout, setLayout] = useState(JSON.parse(dashboard.chart_layout))
     const [timeOption, setTimeOption] = useState({label:'Last 1 hour', value: '60'})
     const [autoRefreshOption, setAutoRefreshOption] = useState({label:'Off', value: '0'})
@@ -39,7 +39,7 @@ function DashboardDetail({dashboard, onSaveLayout}) {
             .then(response => {
                 if (response['code'] === 0) {
                     setChartList(response['data'])
-                    setLayout(JSON.parse(dashboard.chart_layout))
+                    initLayout(response['data'], JSON.parse(dashboard.chart_layout))
                 } else {
                     let msg = "get chart list failed " + response['msg']
                     message.error(msg, 3)
@@ -52,9 +52,32 @@ function DashboardDetail({dashboard, onSaveLayout}) {
             })
     }, [dashboard.id])
 
-    function onLayoutChange(newLayout) {
-        console.log("onLayoutChange, newLayout=" + newLayout)
-        setLayout(newLayout)
+    // after add chart the router will navigate to initialize dashboard,
+    // so we need to add a new layout grid here
+    function initLayout(chartList, oldLayout) {
+        if (chartList.length === oldLayout.length) {
+            setLayout(oldLayout)
+        } else {
+            // the new chart must the last in the array, and always add to the new grid at the bottom
+            let newChart = chartList[chartList.length - 1]
+            let maxHeight = 0
+            for (let i = 0; i < oldLayout.length; i++) {
+                if (oldLayout[i].y + oldLayout[i].h > maxHeight) {
+                    maxHeight = oldLayout[i].y + oldLayout[i].h
+                }
+            }
+
+            let newLayout = [...oldLayout, {w: 4, h: 4, x: 0, y: maxHeight, i: newChart.id.toString(), moved:false,static:true}]
+            dashboard.chart_layout = JSON.stringify(newLayout)
+            onUpdateDashboard(dashboard)
+        }
+    }
+
+    function onLayoutChange(newLayout, allLayouts) {
+        console.log("onLayoutChange, newLayout=" + newLayout + ", allLayouts=" + allLayouts)
+        if (newLayout.length === chartList.length) {
+            setLayout(newLayout)
+        }
     }
 
     function handleTime(option) {
@@ -118,6 +141,9 @@ function DashboardDetail({dashboard, onSaveLayout}) {
                 if (response['code'] === 0) {
                     message.success("delete chart success", 3)
                     setChartList(prevChartList => prevChartList.filter(item => item.id !== chart.id))
+                    let newLayout = layout.filter(item => parseInt(item.i) !== chart.id)
+                    dashboard.chart_layout = JSON.stringify(newLayout)
+                    onUpdateDashboard(dashboard)
                 } else {
                     let errMsg = "delete chart failed: " + response['msg']
                     message.error(errMsg)
@@ -146,7 +172,7 @@ function DashboardDetail({dashboard, onSaveLayout}) {
         });
 
         dashboard.chart_layout = JSON.stringify(newLayout)
-        onSaveLayout(dashboard)
+        onUpdateDashboard(dashboard)
     }
 
     let inChangeLayout = layout.length > 0 && !layout[0].static
