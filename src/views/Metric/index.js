@@ -118,7 +118,7 @@ function Metric() {
             render: (_, record) => (
                 <Space size="middle">
                     <Button icon={<EditOutlined/>} type={"primary"} onClick={() => editMetric(record)}>Edit</Button>
-                    <Button icon={<MinusCircleOutlined />} type={"primary"} onClick={()=> deleteMetric(record)}>Delete</Button>
+                    <Button icon={<MinusCircleOutlined />} danger={true} type={"primary"} onClick={()=> deleteMetric(record)}>Delete</Button>
                 </Space>
             ),
         },

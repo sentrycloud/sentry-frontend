@@ -22,3 +22,16 @@ export const autoRefreshOptions= [
     {label:'1h', value: '3600'},
     {label:'2h', value: '7200'}
 ];
+
+export const chartTypeOptions = [
+    {label:"line", value:"line"},
+    {label:"pie", value:"pie"},
+    {label:"topN", value:"topN"}
+]
+
+export const aggregationTypeOptions = [
+    {label:"sum", value:"sum"},
+    {label:"avg", value:"avg"},
+    {label:"max", value:"max"},
+    {label:"min", value:"min"}
+]

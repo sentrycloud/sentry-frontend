@@ -120,7 +120,7 @@ function Contact() {
             render: (_, record) => (
                 <Space size="middle">
                     <Button icon={<EditOutlined />} type={"primary"} onClick={()=> editContact(record)}>Edit</Button>
-                    <Button icon={<MinusCircleOutlined />} type={"primary"} onClick={()=> deleteContact(record)}>Delete</Button>
+                    <Button icon={<MinusCircleOutlined />} danger={true} type={"primary"} onClick={()=> deleteContact(record)}>Delete</Button>
                 </Space>
             ),
         },

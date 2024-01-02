@@ -1,0 +1,397 @@
+import {Button, Card, Form, Input, InputNumber, Modal, Select} from 'antd';
+import {useState} from "react";
+import {CloseOutlined, PlusOutlined} from "@ant-design/icons";
+import {aggregationTypeOptions} from "../Dashboard/config";
+import TextArea from "antd/es/input/TextArea";
+
+const alarmTypeOptions = [
+    {label:'heartbeat', value: 0},
+    {label:'threshold', value: 1},
+    {label:'compare', value: 2},
+    {label:'topN', value: 3},
+]
+
+const alarmLevelOptions = [
+    {label:'info', value: 0},
+    {label:'warn', value: 1},
+    {label:'error', value: 2},
+]
+
+export function getAlarmTypeName(type) {
+    if (type === 0) {
+       return "heartbeat"
+    } else if (type === 1) {
+        return "threshold"
+    } else if (type === 2) {
+        return "compare"
+    } else if (type === 3) {
+        return "topN"
+    } else {
+        return 'unknown'
+    }
+}
+
+export function getAlarmLevelName(level) {
+    if (level === 0) {
+        return 'info'
+    } else if (level === 1) {
+        return 'warn'
+    } else if (level === 2) {
+        return 'error'
+    } else {
+        return 'unknown'
+    }
+}
+
+function AlarmRuleDetail({open, onCreate, onUpdate, onCancel, alarmRule}) {
+    const [alarmTypeOption, setAlarmTypeOption] = useState(
+        alarmRule == null ? {label:'heartbeat', value: 0} : {label:alarmRule.typeName, value: alarmRule.type})
+    const [dataSource, setDataSource] = useState(
+        alarmRule == null ? {metric:'', tags: {}, aggregation: "sum", down_sample: 10}: JSON.parse(alarmRule.data_source))
+    const [alarmLevelOption, setAlarmLevelOption] = useState(
+        alarmRule == null ? {label:'info', value: 0}: {label:alarmRule.alarmLevelName, value: alarmRule.level}
+    )
+    const [form] = Form.useForm();
+
+    function onAlarmTypeChange(option) {
+        console.log("onAlarmTypeChange: " + option)
+        setAlarmTypeOption(option)
+    }
+
+    function onAggregationTypeChange(option) {
+        console.log("onAggregationTypeChange: " + option)
+
+        let newDataSource = {...dataSource}
+        newDataSource.aggregation = option.value
+        setDataSource(newDataSource)
+    }
+
+    function onAlarmLevelChange(option) {
+        setAlarmLevelOption(option)
+    }
+
+    function handleTagKey(index, oldKey, newKey) {
+        console.log(`handleTagKey: old=${oldKey}, new=${newKey}`)
+        if (newKey in dataSource.tags) {
+            console.log("newKey exist, do nothing")
+            return
+        }
+
+        let newDataSource = {...dataSource}
+        newDataSource.tags[newKey] = newDataSource.tags[oldKey]
+        delete newDataSource.tags[oldKey]
+        setDataSource(newDataSource)
+    }
+
+    function handleTagValue(index, key, value) {
+        console.log(`handleTagValue: key=${key}, value=${value}`)
+
+        let newDataSource = {...dataSource}
+        newDataSource.tags[key] = value
+        setDataSource(newDataSource)
+    }
+
+    function handleAddTag(index) {
+        console.log('handleAddTag')
+        if ('' in dataSource.tags) {
+            console.log("has empty tag already")
+            return
+        }
+
+        let newDataSource = {...dataSource}
+        newDataSource.tags[''] = ''
+        setDataSource(newDataSource)
+    }
+
+    function handleDelTag(index, key) {
+        console.log(`handleDelTag, key=${key}`)
+
+        let newDataSource = {...dataSource}
+        delete newDataSource.tags[key]
+        setDataSource(newDataSource)
+    }
+
+    function transferTags(tags, index){
+        let tagsList= [];
+        let count= 0;
+        if (typeof(tags) === 'string') {
+            tags = JSON.parse(tags);
+        }
+
+        for (let key in tags) {
+            count++;
+            tagsList.push(
+                <div key={count} className="m-t-5 m-r-5" style={{display:'inline-block'}}>
+                    <Input style={{ width: 100, textAlign: 'center' }} value={key} onChange={e=>handleTagKey(index, key, e.target.value)} placeholder="key" />
+                    <Input style={{ width: 24, pointerEvents: 'none', borderLeft: 0 }} placeholder=":" disabled/>
+                    <Input style={{ width: 180, textAlign: 'center', borderLeft: 0 }} value={tags[key]} onChange={e => handleTagValue(index, key, e.target.value)} placeholder="value" />
+
+                    <Button type="primary" danger={true} size="small" onClick={() => handleDelTag(index, key)}><CloseOutlined/></Button>
+                </div>
+            )
+        }
+
+        tagsList.push(
+            <Button type="primary" size="small" className="m-l-5" key={count} onClick={()=>handleAddTag(index)}>
+                <PlusOutlined />
+            </Button>
+        )
+
+        return tagsList;
+    }
+
+    if (!open) {
+        return
+    }
+
+    let title = alarmRule == null ? "Create Alarm Rule" : "Update Alarm Rule"
+    let okText = alarmRule == null ? "Create" : "Update"
+    let trigger = alarmRule == null ? {less_than: '', greater_than: '', error_count: 1} : JSON.parse(alarmRule.trigger)
+
+    return (
+        <Modal
+            open={open}
+            title={title}
+            okText={okText}
+            cancelText="Cancel"
+            onCancel={onCancel}
+            onOk={() => {
+                form.validateFields()
+                    .then((values) => {
+                        form.resetFields();
+
+                        let newAlarmRule = {}
+                        if (alarmRule != null) {
+                            newAlarmRule.id = alarmRule.id
+                        }
+                        newAlarmRule.name = values.name
+                        newAlarmRule.type = alarmTypeOption.value
+                        newAlarmRule.query_range = values.query_range
+                        newAlarmRule.contacts = values.contacts
+                        newAlarmRule.level = alarmLevelOption.value
+                        newAlarmRule.message = values.message
+
+                        dataSource.metric = values.metric
+                        dataSource.down_sample = values.down_sample
+                        newAlarmRule.data_source = JSON.stringify(dataSource)
+
+                        let trigger = {}
+                        if (alarmTypeOption.label === 'heartbeat') {
+                            trigger = {error_count: values.error_count}
+                        } else {
+                            trigger = {
+                                less_than: values.less_than,
+                                greater_than: values.greater_than,
+                                error_count: values.error_count,
+                            }
+                        }
+                        newAlarmRule.trigger = JSON.stringify(trigger)
+
+                        if (alarmRule == null) {
+                            onCreate(newAlarmRule)
+                        } else {
+                            onUpdate(newAlarmRule)
+                        }
+                    })
+                    .catch((info) => {
+                        console.log('Validate Failed:', info);
+                    });
+            }}
+        >
+            <Form
+                form={form}
+                layout="vertical"
+                name="form_in_modal"
+                initialValues={{
+                    modifier: 'public',
+                }}
+            >
+                <Form.Item
+                    name="name"
+                    label="Name"
+                    tooltip={'name of this alarm rule'}
+                    initialValue={alarmRule == null ? "" : alarmRule.name}
+                    rules={[
+                        {
+                            required: true,
+                            message: 'Please input alarm rule name',
+                        },
+                    ]}
+                >
+                    <Input />
+                </Form.Item>
+                <Form.Item name="type"
+                           label="Alarm Type"
+                           initialValue={alarmTypeOption}
+                           rules={[
+                               {
+                                   required: true,
+                                   message: 'Please input alarm option',
+                               },
+                           ]}
+                >
+                    <Select  labelInValue={true}
+                             style={{display:"block"}}
+                             options={alarmTypeOptions}
+                             onChange={onAlarmTypeChange}
+                    />
+                </Form.Item>
+
+                <Form.Item name="query_range"
+                           label="Query Time Range"
+                           initialValue={alarmRule == null ? 60 : alarmRule.query_range}
+                           rules={[
+                               {
+                                   required: true,
+                                   message: 'Please input query time range',
+                               },
+                           ]}
+                >
+                    <InputNumber />
+                </Form.Item>
+
+                <Form.Item name="contacts"
+                           label="Contacts"
+                           tooltip={"contact names, use , to separate multiple contacts"}
+                           initialValue={alarmRule == null ? "": alarmRule.contacts}
+                           rules={[
+                               {
+                                   required: true,
+                                   message: 'Please input contact, use , as separator for multiple contacts',
+                               },
+                           ]}
+                >
+                    <Input/>
+                </Form.Item>
+
+                <Card title={'Data Source Setup'} bordered={false}>
+                    <Form.Item name="metric"
+                               label="Metric"
+                               initialValue={dataSource.metric}
+                               rules={[
+                                   {
+                                       required: true,
+                                       message: 'Please input metric name',
+                                   },
+                               ]}
+                    >
+                        <Input/>
+                    </Form.Item>
+
+                    <Form.Item
+                        label='Tags'
+                    >
+                        {transferTags(dataSource.tags, 0)}
+                    </Form.Item>
+
+                    <Form.Item name="aggregation"
+                               label="Aggregation Type"
+                               initialValue={{label: dataSource.aggregation, value: dataSource.aggregation}}
+                               rules={[
+                                   {
+                                       required: true,
+                                       message: 'Please input aggregation type',
+                                   },
+                               ]}
+                    >
+                        <Select  labelInValue={true}
+                                 style={{display:"block"}}
+                                 options={aggregationTypeOptions}
+                                 onChange={onAggregationTypeChange}
+                        />
+                    </Form.Item>
+
+                    <Form.Item name="down_sample"
+                               label="Dowm Sample"
+                               tooltip={'unit: second'}
+                               initialValue={dataSource.down_sample}
+                               rules={[
+                                   {
+                                       required: true,
+                                       message: 'Please input down sample time',
+                                   },
+                               ]}
+                    >
+                        <InputNumber />
+                    </Form.Item>
+                </Card>
+
+                <Card title={'Alarm Trigger Setup'} bordered={false}>
+                    { alarmTypeOption.label !== 'heartbeat' &&
+                        <Form.Item name="less_than"
+                           label="Less Than"
+                           initialValue={trigger.less_than}
+                           rules={[
+                               {
+                                   required: true,
+                                   message: 'Please input less than value',
+                               },
+                           ]}
+                    >
+                        <Input/>
+                    </Form.Item>}
+
+                    { alarmTypeOption.label !== 'heartbeat' &&
+                        <Form.Item name="greater_than"
+                          label="Greater Than"
+                          initialValue={trigger.greater_than}
+                          rules={[
+                              {
+                                  required: true,
+                                  message: 'Please input greater than value',
+                              },
+                          ]}
+                    >
+                        <Input/>
+                    </Form.Item>}
+
+                    <Form.Item name="error_count"
+                               label="Error Count"
+                               tooltip={"trigger alarm when error count reach this value"}
+                               initialValue={trigger.error_count}
+                               rules={[
+                                   {
+                                       required: true,
+                                       message: 'Please input error count',
+                                   },
+                               ]}
+                    >
+                        <InputNumber />
+                    </Form.Item>
+                </Card>
+
+                <Form.Item name="level"
+                           label="Alarm Level"
+                           initialValue={alarmLevelOption}
+                           rules={[
+                               {
+                                   required: true,
+                                   message: 'Please input alarm option',
+                               },
+                           ]}
+                >
+                    <Select  labelInValue={true}
+                             style={{display:"block"}}
+                             options={alarmLevelOptions}
+                             onChange={onAlarmLevelChange}
+                    />
+                </Form.Item>
+
+                <Form.Item name="message"
+                           label="Alarm Message"
+                           initialValue={alarmRule == null ? '': alarmRule.message}
+                           rules={[
+                               {
+                                   required: true,
+                                   message: 'Please input alarm message',
+                               },
+                           ]}
+                >
+                    <TextArea rows={3}/>
+                </Form.Item>
+            </Form>
+        </Modal>
+    );
+}
+
+export default AlarmRuleDetail;
