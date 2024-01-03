@@ -7,8 +7,8 @@ import TextArea from "antd/es/input/TextArea";
 const alarmTypeOptions = [
     {label:'heartbeat', value: 0},
     {label:'threshold', value: 1},
-    {label:'compare', value: 2},
-    {label:'topN', value: 3},
+    {label:'topN', value: 2},
+    {label:'compare', value: 3},
 ]
 
 const alarmLevelOptions = [
@@ -17,15 +17,25 @@ const alarmLevelOptions = [
     {label:'error', value: 2},
 ]
 
+const sortOptions = [
+    {label:'desc', value: 'desc'},
+    {label:'asc', value: 'asc'},
+]
+
+const compareOptions = [
+    {label:'difference', value: 0},
+    {label:'ratio', value: 1},
+]
+
 export function getAlarmTypeName(type) {
     if (type === 0) {
        return "heartbeat"
     } else if (type === 1) {
         return "threshold"
     } else if (type === 2) {
-        return "compare"
-    } else if (type === 3) {
         return "topN"
+    } else if (type === 3) {
+        return "compare"
     } else {
         return 'unknown'
     }
@@ -43,11 +53,23 @@ export function getAlarmLevelName(level) {
     }
 }
 
+function getCompareTypeName(compareType) {
+    if (compareType === 0) {
+        return "difference"
+    } else if (compareType === 1) {
+        return "ratio"
+    } else {
+        return "unknown"
+    }
+}
+
 function AlarmRuleDetail({open, onCreate, onUpdate, onCancel, alarmRule}) {
     const [alarmTypeOption, setAlarmTypeOption] = useState(
         alarmRule == null ? {label:'heartbeat', value: 0} : {label:alarmRule.typeName, value: alarmRule.type})
     const [dataSource, setDataSource] = useState(
-        alarmRule == null ? {metric:'', tags: {}, aggregation: "sum", down_sample: 10}: JSON.parse(alarmRule.data_source))
+        alarmRule == null ? {metric:'', tags: {}, aggregation: "sum", down_sample: 10, sort: "desc", limit: 20,
+                                        compare_type: 0, compare_days_ago: 1, compare_seconds: 0}
+            : JSON.parse(alarmRule.data_source))
     const [alarmLevelOption, setAlarmLevelOption] = useState(
         alarmRule == null ? {label:'info', value: 0}: {label:alarmRule.alarmLevelName, value: alarmRule.level}
     )
@@ -63,6 +85,22 @@ function AlarmRuleDetail({open, onCreate, onUpdate, onCancel, alarmRule}) {
 
         let newDataSource = {...dataSource}
         newDataSource.aggregation = option.value
+        setDataSource(newDataSource)
+    }
+
+    function onSortByChange(option) {
+        console.log("onSortByChange: " + option)
+
+        let newDataSource = {...dataSource}
+        newDataSource.sort = option.value
+        setDataSource(newDataSource)
+    }
+
+    function onCompareTypeChange(option) {
+        console.log("onCompareTypeChange: " + option)
+
+        let newDataSource = {...dataSource}
+        newDataSource.compare_type = option.value
         setDataSource(newDataSource)
     }
 
@@ -171,9 +209,21 @@ function AlarmRuleDetail({open, onCreate, onUpdate, onCancel, alarmRule}) {
                         newAlarmRule.level = alarmLevelOption.value
                         newAlarmRule.message = values.message
 
-                        dataSource.metric = values.metric
-                        dataSource.down_sample = values.down_sample
-                        newAlarmRule.data_source = JSON.stringify(dataSource)
+                        let newDataSource = {}
+                        newDataSource.metric = values.metric
+                        newDataSource.tags = dataSource.tags
+                        newDataSource.aggregation = dataSource.aggregation
+                        newDataSource.down_sample = values.down_sample
+                        if (alarmTypeOption.label === 'topN') {
+                            newDataSource.sort = dataSource.sort
+                            newDataSource.limit = values.limit
+                        }
+                        if (alarmTypeOption.label === 'compare') {
+                            newDataSource.compare_type = dataSource.compare_type
+                            newDataSource.compare_days_ago = dataSource.compare_days_ago
+                            newDataSource.compare_seconds = dataSource.compare_seconds
+                        }
+                        newAlarmRule.data_source = JSON.stringify(newDataSource)
 
                         let trigger = {}
                         if (alarmTypeOption.label === 'heartbeat') {
@@ -314,6 +364,88 @@ function AlarmRuleDetail({open, onCreate, onUpdate, onCancel, alarmRule}) {
                     >
                         <InputNumber />
                     </Form.Item>
+
+                    {alarmTypeOption.label === 'topN' &&
+                        <Form.Item name="sort"
+                                   label="Sort by"
+                                   initialValue={{label: dataSource.sort, value: dataSource.sort}}
+                                   rules={[
+                                       {
+                                           required: true,
+                                           message: 'Please input sort type',
+                                       },
+                                   ]}
+                        >
+                            <Select  labelInValue={true}
+                                     style={{display:"block"}}
+                                     options={sortOptions}
+                                     onChange={onSortByChange}
+                            />
+                        </Form.Item>
+                    }
+                    {alarmTypeOption.label === 'topN' &&
+                        <Form.Item name="limit"
+                                   label="Limit"
+                                   tooltip={'limit the topN count'}
+                                   initialValue={dataSource.limit}
+                                   rules={[
+                                       {
+                                           required: true,
+                                           message: 'Please input limit count',
+                                       },
+                                   ]}
+                        >
+                            <InputNumber />
+                        </Form.Item>
+                    }
+                    {alarmTypeOption.label === 'compare' &&
+                        <Form.Item name="compare_type"
+                                   label="Compare Type Difference or Ratio"
+                                   initialValue={{label: getCompareTypeName(dataSource.compare_type), value: dataSource.compare_type}}
+                                   rules={[
+                                       {
+                                           required: true,
+                                           message: 'Please input compare type',
+                                       },
+                                   ]}
+                        >
+                            <Select  labelInValue={true}
+                                     style={{display:"block"}}
+                                     options={compareOptions}
+                                     onChange={onCompareTypeChange}
+                            />
+                        </Form.Item>
+                    }
+                    {alarmTypeOption.label === 'compare' &&
+                        <Form.Item name="compare_days_ago"
+                                   label="Compare Days Ago"
+                                   tooltip={'compare current data with data of this days ago'}
+                                   initialValue={dataSource.compare_days_ago}
+                                   rules={[
+                                       {
+                                           required: true,
+                                           message: 'Please input compare days ago',
+                                       },
+                                   ]}
+                        >
+                            <InputNumber />
+                        </Form.Item>
+                    }
+                    {alarmTypeOption.label === 'compare' &&
+                        <Form.Item name="compare_seconds"
+                                   label="Compare Seconds"
+                                   tooltip={'compare current data with data of this seconds ago'}
+                                   initialValue={dataSource.compare_seconds}
+                                   rules={[
+                                       {
+                                           required: true,
+                                           message: 'Please input compare seconds',
+                                       },
+                                   ]}
+                        >
+                            <InputNumber />
+                        </Form.Item>
+                    }
                 </Card>
 
                 <Card title={'Alarm Trigger Setup'} bordered={false}>
