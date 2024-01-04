@@ -13,9 +13,10 @@ import {
     InputNumber
 } from "antd";
 import {useEffect, useState} from "react";
-import {CloseOutlined, PlusOutlined, QuestionCircleOutlined} from "@ant-design/icons";
+import {QuestionCircleOutlined} from "@ant-design/icons";
 import {Link, useNavigate, useParams} from "react-router-dom";
 import {aggregationTypeOptions, chartTypeOptions} from "./config";
+import {transferTags} from "../../common/utils";
 
 function ChartDetail() {
     const [form] = Form.useForm()
@@ -185,40 +186,6 @@ function ChartDetail() {
         setActiveKeys(newActiveKeys)
     }
 
-    function transferTags(data, index){
-        let tagsList= [];
-        let count= 0;
-        if (typeof(data) === 'string') {
-            data = JSON.parse(data);
-        }
-
-        let len = Object.getOwnPropertyNames(data).length;
-        for (let p in data) {
-            count++;
-            tagsList.push(
-                <div key={count} className="m-t-5 m-r-5" style={{display:'inline-block'}}>
-                    <Input style={{ width: 100, textAlign: 'center' }} value={p} onChange={e=>handleTagKey(index, p, e.target.value)} placeholder="key" />
-                    <Input style={{ width: 24, pointerEvents: 'none', borderLeft: 0 }} placeholder=":" disabled/>
-                    <Input style={{ width: 180, textAlign: 'center', borderLeft: 0 }} value={data[p]} onChange={e => handleTagValue(index, p, e.target.value)} placeholder="value" />
-                    {count === len &&
-                        <Button type="primary" size="small" className="m-l-5" onClick={() => handleAddTag(index)}>
-                            <PlusOutlined/>
-                        </Button>
-                    }
-                    <Button type="primary" danger={true} size="small" onClick={() => handleDelTag(index, p)}><CloseOutlined/></Button>
-                </div>
-            )
-        }
-        if (tagsList.length === 0) {
-            tagsList.push(
-                <Button type="primary" size="small" className="m-l-5" key={count} onClick={()=>handleAddTag(index)}>
-                    <PlusOutlined />
-                </Button>
-            )
-        }
-        return tagsList;
-    }
-
     console.log(chartParams)
     console.log(lineList)
     console.log(activeKeys)
@@ -316,7 +283,7 @@ function ChartDetail() {
                                 wrapperCol={{span: 22}}
                                 style={{marginBottom: 8}}
                             >
-                                {transferTags(line.tags, index)}
+                                {transferTags(line.tags, index, handleAddTag, handleDelTag, handleTagKey, handleTagValue)}
                             </Form.Item>
                         </Col>
                     </Row>

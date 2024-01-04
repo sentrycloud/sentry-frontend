@@ -1,9 +1,17 @@
 import React, {useEffect, useState} from 'react';
-import {Button, Row, Space, Table} from 'antd';
+import {Button, Popconfirm, Row, Space, Table} from 'antd';
 import Search from "antd/es/input/Search";
 import {EditOutlined, MinusCircleOutlined, PlusCircleOutlined} from "@ant-design/icons";
-import ContactDetail from "./ContactDetail";
 import updateListItem from "../../common/utils";
+import FormModal from "../../components/FormModal";
+
+const ContactURL = "/server/api/contact"
+const contactFormOptions = [
+    {name: "name", label: "Contact Name", message: "please input contact name"},
+    {name: "phone", label: "Phone Name", message: "please input phone number"},
+    {name: "mail", label: "Mail Address", message: "please input mail address"},
+    {name: "wechat", label: "Wechat ID", message: "please input wechat ID"},
+]
 
 function Contact() {
     const [contactList, setContactList] = useState([])
@@ -12,7 +20,7 @@ function Contact() {
     const [contact, setContact] = useState(null)
 
     useEffect(()=> {
-        fetch("/server/api/contact")
+        fetch(ContactURL)
             .then(response => response.json())
             .then(response => setContactList(response['data']))
             .catch(console.error)
@@ -39,7 +47,7 @@ function Contact() {
 
     function deleteContact(record) {
         console.log("delete contact: " + record.name)
-        fetch("/server/api/contact", {
+        fetch(ContactURL, {
             method: "DELETE",
             body: JSON.stringify(record)
         }).then(response => response.json())
@@ -57,7 +65,7 @@ function Contact() {
     function onCreate(record) {
         console.log('Received values of form: ', record);
 
-        fetch("/server/api/contact", {
+        fetch(ContactURL, {
             method: "PUT",
             body: JSON.stringify(record)
         }).then(response => response.json())
@@ -77,7 +85,7 @@ function Contact() {
         console.log('Received values of form: ', record);
 
         record.id = contact.id
-        fetch("/server/api/contact", {
+        fetch(ContactURL, {
             method: "POST",
             body: JSON.stringify(record)
         }).then(response => response.json())
@@ -120,7 +128,10 @@ function Contact() {
             render: (_, record) => (
                 <Space size="middle">
                     <Button icon={<EditOutlined />} type={"primary"} onClick={()=> editContact(record)}>Edit</Button>
-                    <Button icon={<MinusCircleOutlined />} danger={true} type={"primary"} onClick={()=> deleteContact(record)}>Delete</Button>
+                    <Popconfirm placement="leftTop" title={"Are you sure to delete this contact?"}
+                                onConfirm={() => deleteContact(record)}>
+                        <Button icon={<MinusCircleOutlined />} danger={true} type={"primary"} onClick={e => e.stopPropagation()}>Delete</Button>
+                    </Popconfirm>
                 </Space>
             ),
         },
@@ -147,8 +158,8 @@ function Contact() {
             </Row>
             <Table columns={columns} dataSource={displayList} pagination={{defaultPageSize:20}}/>
 
-            <ContactDetail open={openCreate} onCreate={onCreate} onCancel={() => setOpenCreate(false)} contact={null}/>
-            {contact != null ? <ContactDetail open={true} onCreate={onUpdate} onCancel={() => setContact(null)} contact={contact}/> : null}
+            <FormModal open={openCreate} title={"Create Contact"} onCreate={onCreate} onCancel={() => setOpenCreate(false)} formItems={contactFormOptions} record={null}/>
+            {contact && <FormModal open={true} title={"Update Contact"} onUpdate={onUpdate} onCancel={() => setContact(null)} formItems={contactFormOptions} record={contact}/> }
         </Space>
     )
 }

@@ -1,8 +1,8 @@
-import {Button, Card, Form, Input, InputNumber, Modal, Select} from 'antd';
+import {Card, Form, Input, InputNumber, Modal, Select} from 'antd';
 import {useState} from "react";
-import {CloseOutlined, PlusOutlined} from "@ant-design/icons";
 import {aggregationTypeOptions} from "../Dashboard/config";
 import TextArea from "antd/es/input/TextArea";
+import {transferTags} from "../../common/utils";
 
 const alarmTypeOptions = [
     {label:'heartbeat', value: 0},
@@ -149,35 +149,6 @@ function AlarmRuleDetail({open, onCreate, onUpdate, onCancel, alarmRule}) {
         setDataSource(newDataSource)
     }
 
-    function transferTags(tags, index){
-        let tagsList= [];
-        let count= 0;
-        if (typeof(tags) === 'string') {
-            tags = JSON.parse(tags);
-        }
-
-        for (let key in tags) {
-            count++;
-            tagsList.push(
-                <div key={count} className="m-t-5 m-r-5" style={{display:'inline-block'}}>
-                    <Input style={{ width: 100, textAlign: 'center' }} value={key} onChange={e=>handleTagKey(index, key, e.target.value)} placeholder="key" />
-                    <Input style={{ width: 24, pointerEvents: 'none', borderLeft: 0 }} placeholder=":" disabled/>
-                    <Input style={{ width: 180, textAlign: 'center', borderLeft: 0 }} value={tags[key]} onChange={e => handleTagValue(index, key, e.target.value)} placeholder="value" />
-
-                    <Button type="primary" danger={true} size="small" onClick={() => handleDelTag(index, key)}><CloseOutlined/></Button>
-                </div>
-            )
-        }
-
-        tagsList.push(
-            <Button type="primary" size="small" className="m-l-5" key={count} onClick={()=>handleAddTag(index)}>
-                <PlusOutlined />
-            </Button>
-        )
-
-        return tagsList;
-    }
-
     if (!open) {
         return
     }
@@ -188,6 +159,7 @@ function AlarmRuleDetail({open, onCreate, onUpdate, onCancel, alarmRule}) {
 
     return (
         <Modal
+            width={600}
             open={open}
             title={title}
             okText={okText}
@@ -331,7 +303,7 @@ function AlarmRuleDetail({open, onCreate, onUpdate, onCancel, alarmRule}) {
                     <Form.Item
                         label='Tags'
                     >
-                        {transferTags(dataSource.tags, 0)}
+                        {transferTags(dataSource.tags, 0, handleAddTag, handleDelTag, handleTagKey, handleTagValue)}
                     </Form.Item>
 
                     <Form.Item name="aggregation"
