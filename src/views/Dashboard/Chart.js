@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Line } from '@ant-design/plots';
+import {Column, Line, Pie} from '@ant-design/plots';
 import {message} from "antd";
 
 function Chart ({timeRange, chart}) {
@@ -13,17 +13,28 @@ function Chart ({timeRange, chart}) {
         }).then((response) => response.json())
             .then((json) => {
                 if (json['code'] === 0) {
-                    let dataPoints = []
-
-                    json['data'].map(line => {
-                            if (line.dps != null && line.dps.length > 0) {
-                                line.dps.map(dataPoint =>
-                                    dataPoints.push({...dataPoint, name: line.name})
-                                )
+                    if (chart.type === 'line') {
+                        let dataPoints = []
+                        json['data'].forEach(line => {
+                                if (line.dps != null && line.dps.length > 0) {
+                                    line.dps.map(dataPoint =>
+                                        dataPoints.push({...dataPoint, name: line.name})
+                                    )
+                                }
                             }
-                        }
-                    )
-                    setData(dataPoints)
+                        )
+                        setData(dataPoints)
+                    } else if (chart.type === 'pie') {
+                        let pieData = []
+                        json['data'].forEach(line => {
+                            if (line.dps != null && line.dps.length > 0) {
+                                pieData.push({name: line.name, value: line.dps[line.dps.length - 1].v})
+                            }
+                        })
+                        setData(pieData)
+                    } else if (chart.type === 'topN') {
+                        setData(json['data'])
+                    }
                 } else {
                     let errMsg = 'request sentry chart data failed: ' + json['msg']
                     message.error(errMsg)
@@ -35,38 +46,84 @@ function Chart ({timeRange, chart}) {
             });
     }, [timeRange.end, timeRange.start]);
 
-    console.log("draw line for " + chart.name)
+    console.log("draw chart for " + chart.name)
 
     function tsToDate(ts) {
         return new Date(ts * 1000).toLocaleString()
     }
 
-    const config = {
-        data,
-        xField: 'ts',
-        yField: 'v',
-        seriesField: 'name',
-        colorField: 'name',
-        axis: {
-            x: {
-                labelAutoRotate: false,
-                labelFormatter: (val) => tsToDate(val),
+    if (chart.type === 'line') {
+        const config = {
+            data,
+            xField: 'ts',
+            yField: 'v',
+            seriesField: 'name',
+            colorField: 'name',
+            axis: {
+                x: {
+                    labelAutoRotate: false,
+                    labelFormatter: (val) => tsToDate(val),
+                },
             },
-        },
-        title: chart.name,
-        autoFit: true,
-        interaction: {
-            brushFilter: true
-        },
-        tooltip: {
-            title: {
-                channel: 'x',
-                valueFormatter: (ts) => tsToDate(ts),
+            title: chart.name,
+            autoFit: true,
+            interaction: {
+                brushFilter: true
+            },
+            tooltip: {
+                title: {
+                    channel: 'x',
+                    valueFormatter: (ts) => tsToDate(ts),
+                }
             }
-        }
-    };
+        };
 
-    return <Line {...config} />;
+        return <Line {...config} />;
+    } else if (chart.type === 'pie') {
+        const config = {
+            data,
+            angleField: 'value',
+            colorField: 'name',
+            title: chart.name,
+            autoFit: true,
+            label: {
+                text: (d) => `${d.name} ${d.value}`,
+                position: 'spider',
+            },
+            legend: {
+                color: {
+                    title: false,
+                    position: 'bottom',
+                    rowPadding: 5,
+                },
+            },
+        };
+
+        return <Pie {...config} />;
+    } else if (chart.type === 'topN') {
+        const config = {
+            data,
+            xField: 'name',
+            yField: 'value',
+            axis: {
+                x: {
+                    labelAutoRotate: false,
+                },
+            },
+            title: chart.name,
+            autoFit: true,
+            interaction: {
+                brushFilter: true
+            },
+            tooltip: {
+                title: {
+                    channel: 'x',
+                }
+            }
+        };
+
+        return <Column {...config} />;
+    }
 }
 
 export default Chart
