@@ -75,7 +75,15 @@ function Chart ({timeRange, chart}) {
                     channel: 'x',
                     valueFormatter: (ts) => tsToDate(ts),
                 }
-            }
+            },
+            legend: {
+                color: {
+                    position: 'bottom',
+                    layout: {
+                        justifyContent: 'center',
+                    },
+                },
+            },
         };
 
         return <Line {...config} />;
@@ -92,9 +100,10 @@ function Chart ({timeRange, chart}) {
             },
             legend: {
                 color: {
-                    title: false,
                     position: 'bottom',
-                    rowPadding: 5,
+                    layout: {
+                        justifyContent: 'center',
+                    },
                 },
             },
         };
