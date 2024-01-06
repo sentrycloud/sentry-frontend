@@ -18,6 +18,7 @@ export function transferTags(tags, index, handleAddTag, handleDelTag, handleTagK
         tags = JSON.parse(tags);
     }
 
+    let tagLength = Object.getOwnPropertyNames(tags).length;
     for (let key in tags) {
         count++;
         tagsList.push(
@@ -27,15 +28,22 @@ export function transferTags(tags, index, handleAddTag, handleDelTag, handleTagK
                 <Input style={{ width: 180, textAlign: 'center', borderLeft: 0 }} value={tags[key]} onChange={e => handleTagValue(index, key, e.target.value)} placeholder="value" />
 
                 <Button type="primary" danger={true} size="small" onClick={() => handleDelTag(index, key)}><CloseOutlined/></Button>
+                { count === tagLength &&
+                    <Button type="primary" size="small" className="m-l-5"  onClick={()=>handleAddTag(index)}>
+                        <PlusOutlined />
+                    </Button>
+                }
             </div>
         )
     }
 
-    tagsList.push(
-        <Button type="primary" size="small" className="m-l-5" key={count} onClick={()=>handleAddTag(index)}>
-            <PlusOutlined />
-        </Button>
-    )
+    if (tagsList.length === 0) {
+        tagsList.push(
+            <Button type="primary" size="small" className="m-l-5" key={count} onClick={() => handleAddTag(index)}>
+                <PlusOutlined/>
+            </Button>
+        )
+    }
 
     return tagsList;
 }

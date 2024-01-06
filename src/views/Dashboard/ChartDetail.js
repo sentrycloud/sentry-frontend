@@ -1,16 +1,5 @@
-import {
-    Button,
-    Col,
-    Form,
-    Input,
-    Row,
-    Select,
-    Collapse,
-    Popconfirm,
-    Tooltip,
-    Breadcrumb,
-    message,
-    InputNumber
+import {Button, Col, Form, Input, Row, Select, Collapse,
+    Popconfirm, Tooltip, Breadcrumb, message, InputNumber
 } from "antd";
 import {useEffect, useState} from "react";
 import {QuestionCircleOutlined} from "@ant-design/icons";
@@ -52,16 +41,28 @@ function ChartDetail() {
                 console.error(reason)
             })
         }
-    }, [])
+    }, [params.chartId, params.dashboardId])
 
-    function onChartTypeChange(option) {
-        chartParams.type = option.value
+    function updatePlainChartParams() {
+        chartParams.name = form.getFieldValue('chartName')
+        chartParams.down_sample = form.getFieldValue('down_sample')
+        if (chartParams.type === 'topN') {
+            chartParams.topn_limit = form.getFieldValue('topnLimit')
+        }
+        // object reference not change, so will not redraw, this is intended
         setChartParams(chartParams)
     }
 
+    function onChartTypeChange(option) {
+        updatePlainChartParams()
+        let newChartParam = {...chartParams, type: option.value}
+        setChartParams(newChartParam)
+    }
+
     function onAggregationTypeChange(option) {
-        chartParams.aggregation = option.value
-        setChartParams(chartParams)
+        updatePlainChartParams()
+        let newChartParam = {...chartParams, aggregation: option.value}
+        setChartParams(newChartParam)
     }
 
     function onSaveChart() {
@@ -74,7 +75,7 @@ function ChartDetail() {
                 chartParams.name = values.chartName
                 chartParams.down_sample = values.down_sample
                 if (chartParams.type === 'topN') {
-                    chartParams.topn_limit = values.topnCount
+                    chartParams.topn_limit = values.topnLimit
                 }
                 chartParams.lines = [...lineList]
 
@@ -107,6 +108,7 @@ function ChartDetail() {
 
     function handleAddLine() {
         console.log("handleAddLine")
+        updatePlainChartParams()
         setLineList(prevLineList => [...prevLineList, {name:'', metric:'', tags:{}, offset:0}])
         setActiveKeys(prevActiveKeys => [...prevActiveKeys, lineList.length.toString()])
     }
@@ -116,6 +118,7 @@ function ChartDetail() {
         e.stopPropagation()
 
         console.log(`handleCopyLine ${index}`)
+        updatePlainChartParams()
         setLineList(prevLineList => [...prevLineList, {...prevLineList[index], id:0}])
         setActiveKeys(prevActiveKey => [...prevActiveKey, lineList.length.toString()])
     }
@@ -124,6 +127,7 @@ function ChartDetail() {
         e.stopPropagation()
 
         console.log(`handleDeleteLine ${index}`)
+        updatePlainChartParams()
         activeKeys.splice(index, 1)
         for (let i = index; i < activeKeys.length; i++) {
             activeKeys[i] = (parseInt(activeKeys[i]) - 1).toString()
@@ -134,6 +138,7 @@ function ChartDetail() {
 
     function handleAddTag(index) {
         console.log(`handleAddTag for line ${index}`)
+        updatePlainChartParams()
         if ('' in lineList[index].tags) {
             console.log("has empty tag already")
             return
@@ -147,6 +152,7 @@ function ChartDetail() {
     function handleDelTag(index, key) {
         console.log(`handleDelTag index=${index} key=${key}`)
 
+        updatePlainChartParams()
         let newLineList = [...lineList]
         delete newLineList[index].tags[key]
         setLineList(newLineList)
@@ -155,6 +161,7 @@ function ChartDetail() {
     function handleTagKey(index, oldKey, newKey) {
         console.log(`handleTagKey index=${index} oldKe=${oldKey} newKey=${newKey}`)
 
+        updatePlainChartParams()
         let newLineList = [...lineList]
         newLineList[index].tags[newKey] = newLineList[index].tags[oldKey]
         delete newLineList[index].tags[oldKey]
@@ -164,6 +171,7 @@ function ChartDetail() {
     function handleTagValue(index, key, value) {
         console.log(`handleTagValue index=${index} key=${key} value=${value}`)
 
+        updatePlainChartParams()
         let newLineList = [...lineList]
         newLineList[index].tags[key] = value
         setLineList(newLineList)
@@ -172,6 +180,7 @@ function ChartDetail() {
     function onLineChange(index, key, v) {
         console.log(`onLineChange, index=${index} key=${key}, v=${v}`)
 
+        updatePlainChartParams()
         let newLineList = [...lineList]
         newLineList[index][key] = v
         setLineList(newLineList)
@@ -179,6 +188,7 @@ function ChartDetail() {
 
     function handleActiveKey(activeKey) {
         console.log(`activeKey=${activeKey}`)
+        updatePlainChartParams()
         let newActiveKeys = [...activeKey.sort()]
         if (newActiveKeys.length > lineList.length) {
             newActiveKeys.splice(lineList.length)
@@ -389,13 +399,13 @@ function ChartDetail() {
                     </Col>
                     {chartParams.type === "topN" && <Col span={8}>
                         <Form.Item
-                            name="topnCount"
-                            label="topN Count"
+                            name="topnLimit"
+                            label="topN Limit"
                             initialValue={chartParams.topn_limit}
                             rules={[
                                 {
                                     required: true,
-                                    message: "please input topN count",
+                                    message: "please input topN limit",
                                 },
                             ]}
                         >

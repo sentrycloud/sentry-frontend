@@ -110,10 +110,6 @@ function AlarmRuleDetail({open, onCreate, onUpdate, onCancel, alarmRule}) {
 
     function handleTagKey(index, oldKey, newKey) {
         console.log(`handleTagKey: old=${oldKey}, new=${newKey}`)
-        if (newKey in dataSource.tags) {
-            console.log("newKey exist, do nothing")
-            return
-        }
 
         let newDataSource = {...dataSource}
         newDataSource.tags[newKey] = newDataSource.tags[oldKey]
