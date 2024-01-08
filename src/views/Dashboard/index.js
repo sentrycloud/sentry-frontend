@@ -12,7 +12,7 @@ const dashboardFormOptions = [
     {name: "name", label: "Dashboard Name", message: "please input dashboard name"},
     {name: "creator", label: "Creator Name", message: "please input creator name"},
     {name: "app_name", label: "App Name", message: "please input application name"},
-    {name: "chart_layout", label: "Chart Layout", message: "please input chart layout"},
+    {name: "chart_layout", label: "Chart Layout", message: "please input chart layout", disable: true},
 ]
 
 function Dashboard() {
@@ -49,6 +49,7 @@ function Dashboard() {
     function onCreateDashboard(record) {
         console.log("create dashboard: " + record)
 
+        record.chart_layout = '[]' // set layout to empty when create dashboard
         fetch(DashboardURL, {
             method: "PUT",
             body: JSON.stringify(record)

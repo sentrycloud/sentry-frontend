@@ -428,7 +428,7 @@ function AlarmRuleDetail({open, onCreate, onUpdate, onCancel, alarmRule}) {
                                },
                            ]}
                     >
-                        <Input/>
+                        <InputNumber />
                     </Form.Item>}
 
                     { alarmTypeOption.label !== 'heartbeat' &&
@@ -442,7 +442,7 @@ function AlarmRuleDetail({open, onCreate, onUpdate, onCancel, alarmRule}) {
                               },
                           ]}
                     >
-                        <Input/>
+                        <InputNumber />
                     </Form.Item>}
 
                     <Form.Item name="error_count"

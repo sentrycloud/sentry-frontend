@@ -14,7 +14,7 @@ import {
 import {useNavigate} from "react-router-dom";
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
-const chartGridStyle = {width:'100%',height:'100%', border: '2px solid rgba(0, 0, 0, 0.05)'}
+const chartGridStyle = {overflow:'hidden', width:'100%',height:'100%', border: '2px solid rgba(0, 0, 0, 0.05)'}
 const HeightUnit = 80
 
 function getCurrentTimestamp() {

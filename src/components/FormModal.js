@@ -9,7 +9,9 @@ function FormModal({open, title, onCreate, onUpdate, onCancel, formItems, record
 
     let okText = record == null ? "Create" : "Update"
     let formItemList = formItems.map((item, index) => {
-        const {name, label, message} = item
+        const {name, label, message, disable} = item
+
+        let disableFlag = disable !== null ? disable : false
         return (
             <Form.Item
                 key={index}
@@ -18,12 +20,12 @@ function FormModal({open, title, onCreate, onUpdate, onCancel, formItems, record
                 initialValue={record == null ? "" : record[name]}
                 rules={[
                     {
-                        required: true,
+                        required: !disableFlag,
                         message: {message},
                     },
                 ]}
             >
-                <Input/>
+                <Input disabled={disableFlag}/>
             </Form.Item>
         )
     })
