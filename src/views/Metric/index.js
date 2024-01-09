@@ -1,9 +1,9 @@
 import React, {useEffect, useState} from 'react';
-import {Button, message, Popconfirm, Row, Space, Table} from 'antd';
+import {Button, Popconfirm, Row, Space, Table} from 'antd';
 import Search from "antd/es/input/Search";
 import {EditOutlined, MinusCircleOutlined, PlusCircleOutlined} from "@ant-design/icons";
-import updateListItem from "../../common/utils";
 import FormModal from "../../components/FormModal";
+import {fetchRequest} from "../../common/request";
 
 const MetricWhiteListURL = "/server/api/metricWhiteList"
 
@@ -20,10 +20,7 @@ function Metric() {
     const [metric, setMetric] = useState(null)
 
     useEffect(()=> {
-        fetch(MetricWhiteListURL)
-            .then(response => response.json())
-            .then(response => setMetricWhiteList(response['data']))
-            .catch(console.error)
+        fetchRequest(MetricWhiteListURL, null, setMetricWhiteList)
     }, [])
 
     function onSearch(value) {
@@ -42,20 +39,7 @@ function Metric() {
     function onCreate(record) {
         console.log('Received values of form: ', record);
 
-        fetch(MetricWhiteListURL, {
-            method: "PUT",
-            body: JSON.stringify(record)
-        }).then(response => response.json())
-            .then(response => {
-                if (response['code'] === 0) {
-                    record = response['data'] // use response data to update the record
-                    setMetricWhiteList(prevWhiteList => [...prevWhiteList, record])
-                    message.success("add metric white list success", 3)
-                } else {
-                    console.error(response['msg'])
-                }
-            }).catch(console.error)
-
+        fetchRequest(MetricWhiteListURL, {method: "PUT", body: JSON.stringify(record)}, setMetricWhiteList)
         setOpenCreate(false);
     }
 
@@ -68,39 +52,13 @@ function Metric() {
         console.log('Received values of form: ', record);
 
         record.id = metric.id
-        fetch(MetricWhiteListURL, {
-            method: "POST",
-            body: JSON.stringify(record)
-        }).then(response => response.json())
-            .then(response => {
-                if (response['code'] === 0) {
-                    message.success("update metric success", 3)
-                    setMetricWhiteList(prevWhiteList => updateListItem(prevWhiteList, record))
-                } else {
-                    console.error(response['msg'])
-                }
-            }).catch(console.error)
-
+        fetchRequest(MetricWhiteListURL, {method: "POST", body: JSON.stringify(record)}, setMetricWhiteList)
         setMetric(null);
     }
 
     function deleteMetric(record) {
-        console.log("delete " + record.metric)
         console.log("delete metric: " + record.metric)
-        fetch(MetricWhiteListURL, {
-            method: "DELETE",
-            body: JSON.stringify(record)
-        }).then(response => response.json())
-            .then(response => {
-                if (response['code'] === 0) {
-                    message.success("delete metric success", 3)
-                    setMetricWhiteList(prevWhiteList =>
-                        prevWhiteList.filter(item => item.id !== record.id)
-                    )
-                } else {
-                    console.error(response['msg'])
-                }
-            }).catch(console.error)
+        fetchRequest(MetricWhiteListURL, {method: "DELETE", body: JSON.stringify(record)}, setMetricWhiteList)
     }
 
     const columns = [

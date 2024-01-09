@@ -5,6 +5,7 @@ import FormModal from "../../components/FormModal";
 import {useNavigate, useParams} from "react-router-dom";
 import updateListItem from "../../common/utils";
 import DashboardDetail from "./DashboardDetail";
+import {fetchRequest} from "../../common/request";
 
 const DashboardURL = "/server/api/dashboard"
 
@@ -23,19 +24,7 @@ function Dashboard() {
     const navigate = useNavigate()
 
     useEffect(() => {
-        fetch(DashboardURL)
-            .then(response => response.json())
-            .then(response => {
-                if (response['code'] === 0) {
-                    setDashboardList(response['data'])
-                } else {
-                    let errMsg = "get dashboard list failed: " + response['msg']
-                    message.error(errMsg, 3)
-                }
-            }).catch(reason => {
-                let errMsg = "get dashboard list failed: " + reason
-                message.error(errMsg, 3)
-            })
+        fetchRequest(DashboardURL, null, setDashboardList)
     }, [])
 
     function handleChangeDashboard(option){
@@ -49,21 +38,12 @@ function Dashboard() {
     function onCreateDashboard(record) {
         console.log("create dashboard: " + record)
 
+        let postProcessFunc = function (record) {
+            navigateDashboard(record.id)
+        }
+
         record.chart_layout = '[]' // set layout to empty when create dashboard
-        fetch(DashboardURL, {
-            method: "PUT",
-            body: JSON.stringify(record)
-        }).then(response => response.json())
-            .then(response => {
-                if (response['code'] === 0) {
-                    message.success("add dashboard success", 3)
-                    record = response['data'] // use response data to update the record
-                    setDashboardList(prevDashboardList => [...prevDashboardList, record])
-                    navigateDashboard(record.id)
-                } else {
-                    console.error(response['msg'])
-                }
-            }).catch(console.error)
+        fetchRequest(DashboardURL, {method: "PUT", body: JSON.stringify(record)}, setDashboardList, postProcessFunc)
 
         setOpen(false)
     }
@@ -78,19 +58,7 @@ function Dashboard() {
         console.log("update dashboard: " + record.name + "," + record.creator + ", " + record.app_name + ", " + record.chart_layout)
 
         record.id = parseInt(params.id)
-        fetch(DashboardURL, {
-            method: "POST",
-            body: JSON.stringify(record)
-        }).then(response => response.json())
-            .then(response => {
-                if (response['code'] === 0) {
-                    message.success("update dashboard success", 3)
-                    record = response['data'] // use response data to update the record
-                    setDashboardList(prevDashboardList => updateListItem(prevDashboardList, record))
-                } else {
-                    console.error(response['msg'])
-                }
-            }).catch(console.error)
+        fetchRequest(DashboardURL, {method: "POST", body: JSON.stringify(record)}, setDashboardList)
 
         setEditDashboard(null)
     }
@@ -98,19 +66,11 @@ function Dashboard() {
     function onDeleteDashboard() {
         console.log(`delete dashboard: id=${params.id}`)
         let currentDashboard = getCurrentDashboard()
-        fetch(DashboardURL, {
-            method: "DELETE",
-            body: JSON.stringify(currentDashboard)
-        }).then(response => response.json())
-            .then(response => {
-                if (response['code'] === 0) {
-                    message.success("delete dashboard success", 3)
-                    setDashboardList(prevDashboardList => prevDashboardList.filter(item => item.id !== currentDashboard.id))
-                    navigate("/dashboard")
-                } else {
-                    console.error(response['msg'])
-                }
-            }).catch(console.error)
+        let postProcessFunc = function (record) {
+            navigate("/dashboard")
+        }
+
+        fetchRequest(DashboardURL, {method: "DELETE", body: JSON.stringify(currentDashboard)}, setDashboardList, postProcessFunc)
     }
 
     function getCurrentDashboard() {

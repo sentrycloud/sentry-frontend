@@ -1,9 +1,11 @@
-import {Button, message, Popconfirm, Row, Space, Table} from "antd";
+import {Button, Popconfirm, Row, Space, Table} from "antd";
 import {EditOutlined, MinusCircleOutlined, PlusCircleOutlined} from "@ant-design/icons";
 import React, {useEffect, useState} from "react";
 import Search from "antd/es/input/Search";
-import updateListItem from "../../common/utils";
 import AlarmRuleDetail, {getAlarmLevelName, getAlarmTypeName} from "./AlarmRuleDetail";
+import {fetchRequest} from "../../common/request";
+
+const AlarmRuleURL = "/server/api/alarmRule"
 
 function Alarm() {
     const [alarmRuleList, setAlarmRuleList] = useState([])
@@ -12,21 +14,7 @@ function Alarm() {
     const [alarmRule, setAlarmRule] = useState(null)
 
     useEffect(()=> {
-        fetch("/server/api/alarmRule")
-            .then(response => response.json())
-            .then(response => {
-                if (response['code'] === 0) {
-                    setAlarmRuleList(response['data'])
-                } else {
-                    let msg = "get alarm rule list failed " + response['msg']
-                    message.error(msg, 3)
-                    console.error(msg)
-                }
-            }).catch(reason => {
-                let msg = "get alarm rule list failed " + reason
-                message.error(msg, 3)
-                console.error(msg)
-        })
+        fetchRequest(AlarmRuleURL, null, setAlarmRuleList)
     }, [])
 
     function onSearch(value) {
@@ -51,45 +39,13 @@ function Alarm() {
 
     function deleteAlarmRule(record) {
         console.log("delete alarm rule: " + record.name)
-        fetch("/server/api/alarmRule", {
-            method: "DELETE",
-            body: JSON.stringify(record)
-        }).then(response => response.json())
-            .then(response => {
-                if (response['code'] === 0) {
-                    message.success("delete rule success", 3)
-                    setAlarmRuleList(prevAlarmRuleList =>
-                        prevAlarmRuleList.filter(rule => rule.id !== record.id)
-                    )
-                } else {
-                    console.error(response['msg'])
-                }
-            }).catch(console.error)
+        fetchRequest(AlarmRuleURL, {method: "DELETE", body: JSON.stringify(record)}, setAlarmRuleList)
     }
 
     function onCreate(record) {
         console.log('Received values of form: ', record);
 
-        fetch("/server/api/alarmRule", {
-            method: "PUT",
-            body: JSON.stringify(record)
-        }).then(response => response.json())
-            .then(response => {
-                if (response['code'] === 0) {
-                    message.success("add alarm rule success", 3)
-                    record = response['data']
-                    setAlarmRuleList(prevAlarmRuleList => [...prevAlarmRuleList, record])
-                } else {
-                    let errMsg = "add alarm rule failed" + response['msg']
-                    console.error(errMsg)
-                    message.error(errMsg, 3)
-                }
-            }).catch(reason => {
-                let errMsg = "add alarm rule failed" + reason
-                console.error(errMsg)
-                message.error(errMsg, 3)
-        })
-
+        fetchRequest(AlarmRuleURL, {method: "PUT", body: JSON.stringify(record)}, setAlarmRuleList)
         setOpenCreate(false);
     }
 
@@ -97,25 +53,7 @@ function Alarm() {
         console.log('Received values of form: ', record);
 
         record.id = alarmRule.id
-        fetch("/server/api/alarmRule", {
-            method: "POST",
-            body: JSON.stringify(record)
-        }).then(response => response.json())
-            .then(response => {
-                if (response['code'] === 0) {
-                    message.success("update alarm rule success", 3)
-                    setAlarmRuleList(prevAlarmRuleList => updateListItem(prevAlarmRuleList, record))
-                } else {
-                    let errMsg = "update alarm rule failed" + response['msg']
-                    console.error(errMsg)
-                    message.error(errMsg, 3)
-                }
-            }).catch(reason => {
-                let errMsg = "update alarm rule failed" + reason
-                console.error(errMsg)
-                message.error(errMsg, 3)
-        })
-
+        fetchRequest(AlarmRuleURL, {method: "POST", body: JSON.stringify(record)}, setAlarmRuleList)
         setAlarmRule(null);
     }
 

@@ -2,8 +2,8 @@ import React, {useEffect, useState} from 'react';
 import {Button, Popconfirm, Row, Space, Table} from 'antd';
 import Search from "antd/es/input/Search";
 import {EditOutlined, MinusCircleOutlined, PlusCircleOutlined} from "@ant-design/icons";
-import updateListItem from "../../common/utils";
 import FormModal from "../../components/FormModal";
+import {fetchRequest} from "../../common/request";
 
 const ContactURL = "/server/api/contact"
 const contactFormOptions = [
@@ -20,10 +20,7 @@ function Contact() {
     const [contact, setContact] = useState(null)
 
     useEffect(()=> {
-        fetch(ContactURL)
-            .then(response => response.json())
-            .then(response => setContactList(response['data']))
-            .catch(console.error)
+        fetchRequest(ContactURL, null, setContactList)
     }, [])
 
     function onSearch(value) {
@@ -47,37 +44,12 @@ function Contact() {
 
     function deleteContact(record) {
         console.log("delete contact: " + record.name)
-        fetch(ContactURL, {
-            method: "DELETE",
-            body: JSON.stringify(record)
-        }).then(response => response.json())
-            .then(response => {
-                if (response['code'] === 0) {
-                    setContactList(prevContactList =>
-                        prevContactList.filter(contact => contact.id !== record.id)
-                    )
-                } else {
-                    console.error(response['msg'])
-                }
-            }).catch(console.error)
+        fetchRequest(ContactURL, {method: "DELETE", body: JSON.stringify(record)}, setContactList)
     }
 
     function onCreate(record) {
         console.log('Received values of form: ', record);
-
-        fetch(ContactURL, {
-            method: "PUT",
-            body: JSON.stringify(record)
-        }).then(response => response.json())
-            .then(response => {
-                if (response['code'] === 0) {
-                    record = response['data']
-                    setContactList(prevContactList => [...prevContactList, record])
-                } else {
-                    console.error(response['msg'])
-                }
-            }).catch(console.error)
-
+        fetchRequest(ContactURL, {method: "PUT", body: JSON.stringify(record)}, setContactList)
         setOpenCreate(false);
     }
 
@@ -85,18 +57,7 @@ function Contact() {
         console.log('Received values of form: ', record);
 
         record.id = contact.id
-        fetch(ContactURL, {
-            method: "POST",
-            body: JSON.stringify(record)
-        }).then(response => response.json())
-            .then(response => {
-                if (response['code'] === 0) {
-                    setContactList(prevContactList => updateListItem(prevContactList, record))
-                } else {
-                    console.error(response['msg'])
-                }
-            }).catch(console.error)
-
+        fetchRequest(ContactURL, {method: "POST", body: JSON.stringify(record)}, setContactList)
         setContact(null);
     }
 
