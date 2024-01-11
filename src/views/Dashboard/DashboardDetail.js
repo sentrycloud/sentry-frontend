@@ -50,7 +50,7 @@ function DashboardDetail({dashboard, onUpdateDashboard}) {
                 message.error(msg, 3)
                 console.error(msg)
             })
-    }, [dashboard.id])
+    }, [dashboard.id, dashboard.chart_layout])
 
     // after add chart the router will navigate to initialize dashboard,
     // so we need to add a new layout grid here

@@ -44,7 +44,7 @@ function Chart ({timeRange, chart}) {
             .catch((error) => {
                 console.log('fetch data failed', error);
             });
-    }, [timeRange.end, timeRange.start]);
+    }, [timeRange.end, timeRange.start, chart]);
 
     console.log("draw chart for " + chart.name)
 

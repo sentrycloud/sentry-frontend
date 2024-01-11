@@ -1,9 +1,8 @@
 import React, {useEffect, useState} from "react";
-import {Button, message, Popconfirm, Select, Space, Tag} from "antd";
+import {Button, Popconfirm, Select, Space, Tag} from "antd";
 import {EditOutlined, MinusCircleOutlined, PlusCircleOutlined} from "@ant-design/icons";
 import FormModal from "../../components/FormModal";
 import {useNavigate, useParams} from "react-router-dom";
-import updateListItem from "../../common/utils";
 import DashboardDetail from "./DashboardDetail";
 import {fetchRequest} from "../../common/request";
 
