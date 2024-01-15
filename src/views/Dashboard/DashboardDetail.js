@@ -238,9 +238,8 @@ function DashboardDetail({dashboard, onUpdateDashboard}) {
     let chartGridList = chartList.map(chart =>
         <div key={chart.id} style={chartGridStyle}>
             <FloatButton.Group
-                style={{position: 'absolute', right: '10px', top: '10px'}}
-                trigger="hover"
-                type="primary"
+                style={{position: 'absolute', right: '10px', top: '10px',width: '40px', height:'40px', border:'0px', margin:'0px', padding: '0px'}}
+                trigger="click"
                 icon={<MenuOutlined/>}
             >
                 <FloatButton tooltip={"edit chart"} icon={<EditOutlined/>} onClick={() => handleEditChart(chart)}/>
