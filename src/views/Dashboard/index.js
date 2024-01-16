@@ -1,10 +1,11 @@
 import React, {useEffect, useState} from "react";
 import {Button, Popconfirm, Select, Space, Tag} from "antd";
-import {EditOutlined, MinusCircleOutlined, PlusCircleOutlined} from "@ant-design/icons";
+import {EditOutlined, FilterOutlined, MinusCircleOutlined, PlusCircleOutlined} from "@ant-design/icons";
 import FormModal from "../../components/FormModal";
 import {useNavigate, useParams} from "react-router-dom";
 import DashboardDetail from "./DashboardDetail";
 import {fetchRequest} from "../../common/request";
+import TagFilter from "./TagFilter";
 
 const DashboardURL = "/server/api/dashboard"
 
@@ -19,6 +20,7 @@ function Dashboard() {
     const [open, setOpen] = useState(false)
     const [editDashboard, setEditDashboard] = useState(null)
     const [dashboardList, setDashboardList] = useState([])
+    const [openTagFilter, setOpenTagFilter] = useState(false)
     const params = useParams()
     const navigate = useNavigate()
 
@@ -72,6 +74,21 @@ function Dashboard() {
         fetchRequest(DashboardURL, {method: "DELETE", body: JSON.stringify(currentDashboard)}, setDashboardList, postProcessFunc)
     }
 
+    function onEditTagFilter() {
+        setOpenTagFilter(true)
+    }
+
+    function onUpdateTagFilter(tagFilter) {
+        console.log("onUpdateTagFilter: metric=" + tagFilter.metric + ", tags=" + tagFilter.tags)
+
+        let currentDashboard = getCurrentDashboard()
+        if (currentDashboard != null) {
+            currentDashboard.tag_filter = JSON.stringify(tagFilter)
+            fetchRequest(DashboardURL, {method: "POST", body: JSON.stringify(currentDashboard)}, setDashboardList)
+        }
+        setOpenTagFilter(false)
+    }
+
     function getCurrentDashboard() {
         let currentDashboardId = parseInt(params.id)
         console.log("currentDashboardId=" + currentDashboardId)
@@ -91,6 +108,7 @@ function Dashboard() {
     let currentDashboard = getCurrentDashboard()
     let defaultLabel = ''
     let options = []
+    let tagFilter = {metric: "", tags: []}
     if (dashboardList != null && dashboardList.length > 0) {
         options = dashboardList.map(item => {
             return {label: item.name, value: item.id}
@@ -98,6 +116,10 @@ function Dashboard() {
 
         if (currentDashboard != null) {
             defaultLabel = currentDashboard.name
+
+            if (currentDashboard.tag_filter !== '') {
+                tagFilter = JSON.parse(currentDashboard.tag_filter)
+            }
         }
     }
 
@@ -127,6 +149,7 @@ function Dashboard() {
                                 onConfirm={(e) => onDeleteDashboard()}>
                         <Button icon={<MinusCircleOutlined/>} type={"primary"} danger={true} onClick={e=> e.stopPropagation()}>Delete Dashboard</Button>
                     </Popconfirm>
+                    <Button icon={<FilterOutlined/>} type={"primary"} onClick={onEditTagFilter}>Edit Tag Filter</Button>
                 </Space>
             </Space>
 
@@ -137,6 +160,9 @@ function Dashboard() {
             {editDashboard && <FormModal open={true} title={"Update Dashboard"} onUpdate={onUpdateDashboard}
                                          onCancel={() => setEditDashboard(null)}
                                          formItems={dashboardFormOptions} record={editDashboard}/>}
+
+            <TagFilter open={openTagFilter} onUpdate={onUpdateTagFilter}
+                       onCancel={() => setOpenTagFilter(false)} filter={tagFilter}/>
         </div>
     );
 }

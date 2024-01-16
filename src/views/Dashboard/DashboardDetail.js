@@ -1,7 +1,7 @@
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 import Chart from "./Chart";
-import {Button, Card, DatePicker, FloatButton, message, Popconfirm, Select, Tooltip} from "antd";
+import {Button, Card, DatePicker, FloatButton, message, Popconfirm, Row, Select, Tooltip} from "antd";
 import React, {useEffect, useState} from "react";
 import {Responsive, WidthProvider} from "react-grid-layout";
 import {autoRefreshOptions, timeSelect} from "./config";
@@ -12,6 +12,7 @@ import {
     ReloadOutlined, UnlockOutlined
 } from "@ant-design/icons";
 import {useNavigate} from "react-router-dom";
+import {generalFetchRequest} from "../../common/request";
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 const chartGridStyle = {overflow:'hidden', width:'100%',height:'100%', border: '2px solid rgba(0, 0, 0, 0.05)'}
@@ -19,6 +20,28 @@ const HeightUnit = 80
 
 function getCurrentTimestamp() {
     return Math.floor(new Date().getTime() / 1000)
+}
+
+function initFilterSelectedValue(filter) {
+    if (filter === '') {
+        return {}
+    }
+
+    let filterSelectedValue = {}
+    let tagFilter = JSON.parse(filter)
+    tagFilter.tags.map(tag => filterSelectedValue[tag] = 'All')
+    return filterSelectedValue
+}
+
+function initFilterSelectedOptionList(filter) {
+    if (filter === '') {
+        return {}
+    }
+
+    let filterSelectedOptionList = {}
+    let tagFilter = JSON.parse(filter)
+    tagFilter.tags.map(tag => filterSelectedOptionList[tag] = [{label:'All', value: 'All'}])
+    return filterSelectedOptionList
 }
 
 function DashboardDetail({dashboard, onUpdateDashboard}) {
@@ -29,6 +52,8 @@ function DashboardDetail({dashboard, onUpdateDashboard}) {
     const [timeRange, setTimeRange] = useState({start: getCurrentTimestamp() - 3600, end: getCurrentTimestamp()})
     const [showCustom, setShowCustom] = useState(false)
     const [chartList, setChartList] = useState([])
+    const [filterSelectedValue, setFilterSelectedValue] = useState(initFilterSelectedValue(dashboard.tag_filter))
+    const [filterOptionList, setFilterOptionList] = useState(initFilterSelectedOptionList(dashboard.tag_filter))
     const navigate = useNavigate()
 
     useEffect(() => {
@@ -188,6 +213,36 @@ function DashboardDetail({dashboard, onUpdateDashboard}) {
         onUpdateDashboard(dashboard)
     }
 
+    function handleTagFilterChange(tag, tagValue) {
+        console.log("handleTagFilterChange, tag=" + tag + ", tagValue=" + tagValue)
+
+        setFilterSelectedValue(prevMap => {
+            let newMap = {...prevMap}
+            newMap[tag] = tagValue
+            return newMap
+        })
+    }
+
+    function handleTagFilterFocus(m, tag) {
+        console.log("handleTagFilterFocus=" + tag)
+
+        let tagsMap = new Map()
+        tagsMap[tag] = "*"
+        let reqData = {
+            method: "POST",
+            body: JSON.stringify({metric: m, tags: tagsMap})
+        }
+        generalFetchRequest("/server/api/tagValues", reqData, function (data) {
+            console.log(data)
+            setFilterOptionList(prevMap => {
+                let newMap = {...prevMap}
+                newMap[tag] = [{label:'All', value: 'All'}]
+                data.map(tagValue => newMap[tag].push({label:tagValue, value: tagValue}))
+                return newMap
+            })
+        })
+    }
+
     let inChangeLayout = layout.length > 0 && !layout[0].static
     let operateList= <div>
         <span>Time: </span>
@@ -235,6 +290,33 @@ function DashboardDetail({dashboard, onUpdateDashboard}) {
             <Button type={"primary"} onClick={handleSaveLayout} shape={"circle"} icon={<LockOutlined/>}/> </Tooltip> }
     </div>;
 
+    let tagFilter = {metric: "", tags: []}
+    if (dashboard.tag_filter !== '') {
+        tagFilter = JSON.parse(dashboard.tag_filter)
+    }
+
+    let tagSelectList = []
+    if (tagFilter.tags.length > 0) {
+        tagSelectList = tagFilter.tags.map((tag, index) => {
+            return (
+                <div style={{margin: '5px'}}>
+                    <span >{tag}: </span>
+                    <Select
+                        labelInValue={true}
+                        showSearch={true}
+                        style={{width:120}}
+                        value={filterSelectedValue[tag]}
+                        optionLabelProp="label"
+                        optionFilterProp="label"
+                        onChange={(option) => handleTagFilterChange(tag, option.value)}
+                        onFocus={() => handleTagFilterFocus(tagFilter.metric, tag)}
+                        options={filterOptionList[tag]}
+                    />
+                </div>
+            )
+        })
+    }
+
     let chartGridList = chartList.map(chart =>
         <div key={chart.id} style={chartGridStyle}>
             <FloatButton.Group
@@ -258,6 +340,7 @@ function DashboardDetail({dashboard, onUpdateDashboard}) {
     return (
         <div>
             <Card title={dashboard.name} bordered={false} extra={operateList}>
+                {tagSelectList.length > 0 ? <Row> {tagSelectList} </Row> : null}
                 <ResponsiveGridLayout
                     className="layout"
                     layouts={{"lg":layout}}

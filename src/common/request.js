@@ -39,3 +39,24 @@ export function fetchRequest(url, reqData, updateHookFunc, postProcessFunc = nul
             console.error(msg)
         })
 }
+
+export function generalFetchRequest(url, reqData, successProcessFunc) {
+    fetch(url, reqData)
+        .then(response => response.json())
+        .then(response => {
+            if (response['code'] === 0) {
+                let data = response['data']
+                if (data != null) {
+                    successProcessFunc(data)
+                }
+            } else {
+                let msg = url + " failed: " + response['msg']
+                message.error(msg, 3)
+                console.error(msg)
+            }
+        }).catch(reason => {
+            let msg =  url + " failed: " + reason
+            message.error(msg, 3)
+            console.error(msg)
+        })
+}
