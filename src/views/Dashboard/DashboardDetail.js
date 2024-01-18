@@ -22,28 +22,6 @@ function getCurrentTimestamp() {
     return Math.floor(new Date().getTime() / 1000)
 }
 
-function initFilterSelectedValue(filter) {
-    if (filter === '') {
-        return {}
-    }
-
-    let filterSelectedValue = {}
-    let tagFilter = JSON.parse(filter)
-    tagFilter.tags.map(tag => filterSelectedValue[tag] = 'All')
-    return filterSelectedValue
-}
-
-function initFilterSelectedOptionList(filter) {
-    if (filter === '') {
-        return {}
-    }
-
-    let filterSelectedOptionList = {}
-    let tagFilter = JSON.parse(filter)
-    tagFilter.tags.map(tag => filterSelectedOptionList[tag] = [{label:'All', value: 'All'}])
-    return filterSelectedOptionList
-}
-
 function DashboardDetail({dashboard, onUpdateDashboard}) {
     const [layout, setLayout] = useState(JSON.parse(dashboard.chart_layout))
     const [timeOption, setTimeOption] = useState({label:'Last 1 hour', value: '60'})
@@ -52,11 +30,15 @@ function DashboardDetail({dashboard, onUpdateDashboard}) {
     const [timeRange, setTimeRange] = useState({start: getCurrentTimestamp() - 3600, end: getCurrentTimestamp()})
     const [showCustom, setShowCustom] = useState(false)
     const [chartList, setChartList] = useState([])
-    const [filterSelectedValue, setFilterSelectedValue] = useState(initFilterSelectedValue(dashboard.tag_filter))
-    const [filterOptionList, setFilterOptionList] = useState(initFilterSelectedOptionList(dashboard.tag_filter))
+    const [filterSelectedValue, setFilterSelectedValue] = useState({})
+    const [filterOptionList, setFilterOptionList] = useState({})
+    const [filterTags, setFilterTags] = useState({})
     const navigate = useNavigate()
 
     useEffect(() => {
+        initFilterSelectedValue(dashboard.tag_filter)
+        initFilterSelectedOptionList(dashboard.tag_filter)
+
         fetch("/server/api/chartList", {
             method: "POST",
             body: JSON.stringify({"dashboard_id": dashboard.id})
@@ -76,6 +58,30 @@ function DashboardDetail({dashboard, onUpdateDashboard}) {
                 console.error(msg)
             })
     }, [dashboard.id, dashboard.chart_layout])
+
+    function initFilterSelectedValue(filter) {
+        if (filter === '') {
+            return
+        }
+
+        let filterSelectedValue = {}
+        let tagFilter = JSON.parse(filter)
+        tagFilter.tags.map(tag => filterSelectedValue[tag] = 'All')
+        console.log("init filter tags=" + tagFilter.tags)
+        setFilterSelectedValue(filterSelectedValue)
+    }
+
+    function initFilterSelectedOptionList(filter) {
+        if (filter === '') {
+            return
+        }
+
+        let filterSelectedOptionList = {}
+        let tagFilter = JSON.parse(filter)
+        tagFilter.tags.map(tag => filterSelectedOptionList[tag] = [{label:'All', value: 'All'}])
+        console.log("init filter options tags=" + tagFilter.tags)
+        setFilterOptionList(filterSelectedOptionList)
+    }
 
     // after add chart the router will navigate to initialize dashboard,
     // so we need to add a new layout grid here
@@ -100,10 +106,8 @@ function DashboardDetail({dashboard, onUpdateDashboard}) {
     }
 
     function onLayoutChange(newLayout, allLayouts) {
-        console.log("onLayoutChange, newLayout=" + newLayout + ", allLayouts=" + allLayouts)
         for (let i = 0 ; i < newLayout.length; i++) {
             let item = newLayout[i]
-            console.log("i=" + item.i + ", x=" + item.x + ", y=" + item.y + ",w="+ item.w + ",h=" + item.h)
             if (item.w === 1 && item.h === 1) {
                 // filter layout change with buggy onLayoutChange
                 return
@@ -111,7 +115,6 @@ function DashboardDetail({dashboard, onUpdateDashboard}) {
         }
 
         if (newLayout.length === chartList.length) {
-            console.log("set new layout")
             setLayout(newLayout)
         }
     }
@@ -215,6 +218,15 @@ function DashboardDetail({dashboard, onUpdateDashboard}) {
 
     function handleTagFilterChange(tag, tagValue) {
         console.log("handleTagFilterChange, tag=" + tag + ", tagValue=" + tagValue)
+        filterSelectedValue[tag] = tagValue
+        let newFilterTags = {}
+        for (let key in filterSelectedValue) {
+            let value = filterSelectedValue[key]
+            if (value !== 'All') {
+                newFilterTags[key] = value
+            }
+        }
+        setFilterTags(newFilterTags)
 
         setFilterSelectedValue(prevMap => {
             let newMap = {...prevMap}
@@ -331,11 +343,9 @@ function DashboardDetail({dashboard, onUpdateDashboard}) {
                 </Popconfirm>
             </FloatButton.Group>
 
-            <Chart timeRange={timeRange}  chart={chart}/>
+            <Chart timeRange={timeRange}  chart={chart} tagFilter={filterTags}/>
         </div>
     )
-
-    console.log("layout=" + JSON.stringify(layout))
 
     return (
         <div>

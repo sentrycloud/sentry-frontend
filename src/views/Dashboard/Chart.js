@@ -2,14 +2,13 @@ import React, { useState, useEffect } from 'react';
 import {Column, Line, Pie} from '@ant-design/plots';
 import {message} from "antd";
 
-function Chart ({timeRange, chart}) {
+function Chart ({timeRange, chart, tagFilter}) {
     const [data, setData] = useState([]);
 
     useEffect(() => {
-        console.log("fetch data for " + chart.name)
         fetch('/server/api/chartData', {
             method: 'POST',
-            body: JSON.stringify({start: timeRange.start, end: timeRange.end, ...chart})
+            body: JSON.stringify({start: timeRange.start, end: timeRange.end, ...chart, filter: tagFilter})
         }).then((response) => response.json())
             .then((json) => {
                 if (json['code'] === 0) {
@@ -44,9 +43,7 @@ function Chart ({timeRange, chart}) {
             .catch((error) => {
                 console.log('fetch data failed', error);
             });
-    }, [timeRange.end, timeRange.start, chart]);
-
-    console.log("draw chart for " + chart.name)
+    }, [timeRange.end, timeRange.start, chart, tagFilter]);
 
     function tsToDate(ts) {
         return new Date(ts * 1000).toLocaleString()
