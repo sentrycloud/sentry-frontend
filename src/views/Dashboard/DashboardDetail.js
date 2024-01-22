@@ -17,6 +17,7 @@ import {generalFetchRequest} from "../../common/request";
 const ResponsiveGridLayout = WidthProvider(Responsive);
 const chartGridStyle = {overflow:'hidden', width:'100%',height:'100%', border: '2px solid rgba(0, 0, 0, 0.05)'}
 const HeightUnit = 80
+const MaxWidthGridNum = 12
 
 function getCurrentTimestamp() {
     return Math.floor(new Date().getTime() / 1000)
@@ -89,20 +90,40 @@ function DashboardDetail({dashboard, onUpdateDashboard}) {
         if (chartList.length === oldLayout.length) {
             setLayout(oldLayout)
         } else {
-            // the new chart must the last in the array, and always add to the new grid at the bottom
+            // the new chart must the last in the array
             let newChart = chartList[chartList.length - 1]
-            let maxHeight = 0
-            for (let i = 0; i < oldLayout.length; i++) {
-                if (oldLayout[i].y + oldLayout[i].h > maxHeight) {
-                    maxHeight = oldLayout[i].y + oldLayout[i].h
+            let newGrid = {}
+            if (oldLayout.length === 0) {
+                newGrid = {w: 4, h: 4, x: 0, y: 0, i: newChart.id.toString(), moved:false,static:true}
+            } else {
+                let lastOldGrid = oldLayout[oldLayout.length - 1]
+
+                if (lastOldGrid.x + lastOldGrid.w + 4 <= MaxWidthGridNum) {
+                    // new grid is at the same row with last grid
+                    newGrid = {w: 4, h: 4, x: lastOldGrid.x + lastOldGrid.w, y: lastOldGrid.y, i: newChart.id.toString(), moved:false,static:true}
+                } else {
+                    // new grid is at the next new row to the last grid
+                    newGrid = {w: 4, h: 4, x: 0, y: lastOldGrid.y + lastOldGrid.h, i: newChart.id.toString(), moved:false,static:true}
+                }
+
+                for (let i = 0; i < oldLayout.length - 1; i++) {
+                    let oldGrid = oldLayout[i]
+                    if (isRectangleOverlap(oldGrid, newGrid)) {
+                        // if overlapped, move below the old grid
+                        newGrid.y = oldGrid.y + oldGrid.h
+                    }
                 }
             }
 
-            let newLayout = [...oldLayout, {w: 4, h: 4, x: 0, y: maxHeight, i: newChart.id.toString(), moved:false,static:true}]
+            let newLayout = [...oldLayout, newGrid]
             dashboard.chart_layout = JSON.stringify(newLayout)
-            setLayout(JSON.parse(dashboard.chart_layout))
+            setLayout(newLayout)
             onUpdateDashboard(dashboard)
         }
+    }
+
+    function isRectangleOverlap(rc1, rc2) {
+        return rc1.x + rc1.w > rc2.x && rc2.x + rc2.w > rc1.x && rc1.y + rc1.h > rc2.y && rc2.y + rc2.h > rc1.y;
     }
 
     function onLayoutChange(newLayout, allLayouts) {
